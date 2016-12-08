@@ -40,6 +40,18 @@ public class StringSolution extends Solution {
 			listTimeSlice.add(new TimeSlice(listInput, listOutput));
 		}
 
+		// Final comunication
+
+		List<Boolean> listInput = byteToList(BYTE_ZERO);
+		listInput.add(clock.thick());
+		listInput.add(false);
+
+		List<Boolean> listOutput = byteToList(BYTE_ZERO);
+		listOutput.add(false);
+
+		listTimeSlice.add(new TimeSlice(listInput, listOutput));
+
+
 		return listTimeSlice;
 	}
 	

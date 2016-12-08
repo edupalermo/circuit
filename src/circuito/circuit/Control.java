@@ -1,7 +1,8 @@
 package circuito.circuit;
 
-import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
+import org.joda.time.LocalDateTime;
+import org.joda.time.format.DateTimeFormat;
+import org.joda.time.format.DateTimeFormatter;
 
 public class Control {
 	
@@ -61,9 +62,9 @@ public class Control {
 		LocalDateTime ldt = LocalDateTime.now();
 		ldt = ldt.plusSeconds(remaningSeconds);
 		
-		DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+		DateTimeFormatter formatter = DateTimeFormat.forPattern("yyyy-MM-dd HH:mm:ss");
 		
-		return ldt.format(formatter);
+		return formatter.print(ldt);
 	}
-	
+
 }

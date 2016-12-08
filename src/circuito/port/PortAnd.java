@@ -16,7 +16,7 @@ public class PortAnd implements Port, Comparable<Port> {
 	}
 	
 	@Override
-	public void clear() {};
+	public void reset() {};
 
 	@Override
 	public boolean equals(Object obj) {

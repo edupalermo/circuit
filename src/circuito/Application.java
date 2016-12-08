@@ -39,10 +39,12 @@ public class Application {
 		List<Integer> output = null;
 		
 		while ((output =  getOutput(circuit, solutions)) == null) {
-			int originalSize = circuit.size();
-			// circuit.enrich(oldSize);
-			// circuit.simplifySmart(solutions, oldSize);
 			circuit.randomEnrich(solutions);
+
+			if (circuit.size() > 500) {
+				Candidates candidates = getLastOutput(circuit, solutions);
+				circuit.simplify(candidates.getLastValidOutput());
+			}
 		}
 		
 		return circuit;
@@ -53,12 +55,14 @@ public class Application {
 		System.out.println();
 		System.out.println();
 		System.out.println(String.format("Solutions to process %d circuit size %d", solutions.size(), circuit.size()));
-		System.out.println("Circuit: " + circuit.toString());
+		//System.out.println("Circuit: " + circuit.toString());
 		
 		Candidates candidates = new Candidates();
 
-		for (Solution solution : solutions) {
-			evaluate(circuit, solution, candidates);
+		for (int i = 0; i < solutions.size(); i++) {
+			//System.out.println(String.format("Working on solution [%d]", i));
+			Solution solution = solutions.get(i);
+			evaluate(i, circuit, solution, candidates);
 			if (!candidates.canProvideOutput()) {
 				break;
 			}
@@ -69,21 +73,43 @@ public class Application {
 		
 		return candidates.getOutput();
 	}
-	
-	private static void evaluate(Circuit circuit, Solution solution, Candidates candidates)  {
+
+
+	private static Candidates getLastOutput(Circuit circuit, List<Solution> solutions) {
+		Candidates candidates = new Candidates();
+
+		for (int i = 0; i < solutions.size(); i++) {
+			Solution solution = solutions.get(i);
+			evaluate(i, circuit, solution, candidates);
+			if (!candidates.canProvideOutput()) {
+				break;
+			}
+		}
+
+		return candidates;
+	}
+
+
+
+	private static void evaluate(int solutionIndex, Circuit circuit, Solution solution, Candidates candidates)  {
 		
 		List<Boolean> state = circuit.generateInitialState();
-		for (TimeSlice timeSlice : solution.getDialogue()) {
-			System.out.println("Input: " + booleanListToString(timeSlice.getInput()) + " Output: " + booleanListToString(timeSlice.getOutput()));
+		circuit.reset();
+		for (int i = 0; i < solution.getDialogue().size(); i++) {
+			System.out.println(String.format("Working on solution [%d] on Dialogue [%d]", solutionIndex, i));
+
+			TimeSlice timeSlice = solution.getDialogue().get(i);
+
+			//System.out.println("Input: " + booleanListToString(timeSlice.getInput()) + " Output: " + booleanListToString(timeSlice.getOutput()));
 			circuit.assignInputToState(state, timeSlice.getInput());
 			circuit.propagate(state);
-			System.out.println("State: " + booleanListToString(state));
+			//System.out.println("State: " + booleanListToString(state));
 			candidates.compute(state, timeSlice.getOutput());
 			
 			candidates.dump();
 			
 			if (candidates.canProvideOutput()) {
-				System.out.println("Current Output: " + integerListToString(candidates.getOutput()));
+				//System.out.println("Current Output: " + integerListToString(candidates.getOutput()));
 			}
 			else {
 				break;
@@ -98,8 +124,15 @@ public class Application {
 	
 	public static String booleanListToString(List<Boolean> list) {
 		StringBuilder sb = new StringBuilder();
-		for (boolean b : list) {
-			sb.append(b ? "[Y] " : "[N] ");
+		for (int i = 0; i<list.size(); i++) {
+			sb.append("[").append(Integer.toString(i));
+			if (list.get(i).booleanValue()) {
+				sb.append(" Y");
+			}
+			else {
+				sb.append(" N");
+			}
+			sb.append("] ");
 		}
 		sb.deleteCharAt(sb.length() - 1);
 		return sb.toString();

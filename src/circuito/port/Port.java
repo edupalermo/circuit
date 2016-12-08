@@ -7,7 +7,7 @@ public interface Port extends Serializable {
 
 	boolean evaluate(List<Boolean> list);
 	
-	void clear();
+	void reset();
 	
 	void adustLeft(int index);
 

@@ -16,7 +16,7 @@ public class PortMemory implements Port, Comparable<Port> {
 	}
 
 	@Override
-	public void clear() {
+	public void reset() {
 		this.memory = false;
 	}
 

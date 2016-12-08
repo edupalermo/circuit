@@ -10,6 +10,8 @@ public class Candidates extends ArrayList<List<Integer>> {
 	
 	private boolean first = true;
 
+	private List<Integer> lastValidOutput = null;
+
 	public void compute(List<Boolean> state, List<Boolean> output) {
 		if (first) {
 			first = false;
@@ -62,31 +64,50 @@ public class Candidates extends ArrayList<List<Integer>> {
 	}
 	
 	public boolean canProvideOutput() {
+		for (List<Integer> l : this) {
+			if (l.size() == 0) {
+				return false;
+			}
+		}
+
+		this.lastValidOutput = getOutput();
+
+		return true;
+	}
+
+
+	private boolean hasOutputOutput() {
 		boolean answer = true;
-		
+
 		for (List<Integer> l : this) {
 			if (l.size() == 0) {
 				answer = false;
 				break;
 			}
 		}
-		
+
 		return answer;
 	}
-	
+
+
+
 	public List<Integer> getOutput() {
-		ArrayList<Integer> output = null; 
-		
-		if (canProvideOutput()) {
+		ArrayList<Integer> output = null;
+
+		if (hasOutputOutput()) {
 			output = new ArrayList<Integer>();
-			
+
 			for (List<Integer> l : this) {
 				output.add(l.get(0));
 			}
 		}
 		return output;
 	}
-	
+
+	public List<Integer> getLastValidOutput() {
+		return this.lastValidOutput;
+	}
+
 	public void dump() {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Candidates: ");

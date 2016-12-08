@@ -148,205 +148,9 @@ public class Circuit extends ArrayList<Port> {
 	}
 
 	
-	
-	public void enrich(int initial) {
-		
-		int actualSize = this.size();
-		
-		// Adding AND Ports
-		for (int i = 0; i < actualSize; i++) {
-			for (int j = Math.max(initial, i + 1); j < actualSize; j++ ) {
-				this.add(new PortAnd(i, j));
-			}
-		}
-		
-		// Adding OR Ports
-		for (int i = 0; i < actualSize; i++) {
-			for (int j = Math.max(initial, i + 1); j < actualSize; j++ ) {
-				this.add(new PortOr(i, j));
-			}
-		}
-		
-		// Adding NOT Ports
-		for (int i = initial; i < actualSize; i++ ) {
-			this.add(new PortNot(i));
-		}
-		
-		// Adding Mem Ports
-		for (int i = initial; i < actualSize; i++ ) {
-			this.add(new PortMemory(i));
-		}
-	}
-	
-	public void simplifyOld(List<Solution> solutions, int oldSize) {
-		
-		// Assumir que todo mundo eh igual a todo mundo
-		
-		List<List<Integer>> same = new ArrayList<List<Integer>>();
-		for (int i = 0; i < this.size(); i++) {
-			List<Integer> list = new ArrayList<Integer>();
-			
-			for (int j = Math.max((i + 1), oldSize); j < this.size(); j++) {
-				list.add(j);
-			}
-			same.add(list);
-		}
-		
-		for (Solution solution : solutions) {
-			simplify(same, solution);
-		}
-		
-		TreeSet<Integer> ordered = new TreeSet<Integer>();
-		for (List<Integer> l : same) {
-			for (Integer i : l) {
-				ordered.add(i);
-			}
-		}
-		
-		for (Integer i : ordered.descendingSet()) {
-			if (!(this.get(i) instanceof PortInput)) {
-				this.remove(i.intValue());
-				for (int j = i.intValue(); j < this.size(); j++) {
-					this.get(j).adustLeft(i.intValue());
-				}
-			}
-		}
-	}
-
-	
-	public void simplifySmart(List<Solution> solutions, int oldSize) {
-		// Assumir que todo mundo eh igual a todo mundo
-		
-		Control control = new Control(this.size());
-		
-		do {
-			long initial = System.currentTimeMillis();
-		
-			List<IntGapList> same = new ArrayList<IntGapList>();
-			try {
-				for (int i = control.getMin(); i <= control.getMax(); i++) {
-					IntGapList list = Application.intGapListPool.borrowObject();
-					
-					for (int j = 0; j < i; j++) {
-						list.add(j);
-					}
-					same.add(list);
-				}
-				
-				for (Solution solution : solutions) {
-					simplify(same, solution, control.getMin());
-				}
-				
-				for (int i = (same.size() - 1); i >= 0; i--) {
-					if (same.get(i).size() > 0) {
-						int removeIndex = control.getMin() + i; 
-						
-						if (!(this.get(removeIndex) instanceof PortInput)) {
-							this.remove(removeIndex);
-							
-							for (int j = removeIndex; j < this.size(); j++) {
-								this.get(j).adustLeft(removeIndex);
-							}
-						}
-					}
-				}
-			} catch (Exception e) {
-				throw new RuntimeException(e);
-			}
-			finally {
-				for (IntGapList intGapList : same) {
-					try {
-						Application.intGapListPool.returnObject(intGapList);
-					} catch (Exception e) {
-						throw new RuntimeException(e);
-					}
-				}
-			}
-		
-			System.out.println(String.format("Circuit size %d working %d took %d estimative %s", this.size(), control.getDelta(), (System.currentTimeMillis() - initial), control.estimate()));
-			
-		} while (!control.stop());
-	}
-
-	
-	public void simplify(List<Solution> solutions, int oldSize) {
-		
-		long lowestDelta = Integer.MAX_VALUE;
-		
-		long total = 0;
-		long count = 0;
-		
-		for (int i = this.size() - 1; i >= oldSize; i--) {
-			long init = System.currentTimeMillis();
-			List<Integer> same = new ArrayList<Integer>();
-			
-			for (int j = 0; j < i; j++) {
-				same.add(j);
-			}
-			
-			for (Solution solution : solutions) {
-				simplify(i, same, solution);
-			}
-			
-			if (same.size() > 0) {
-				if (!(this.get(i) instanceof PortInput)) {
-					this.remove(i);
-					long delta = (System.currentTimeMillis() - init);
-					lowestDelta = Math.min(lowestDelta, delta);
-					count++;
-					total += delta;
-					System.out.println(String.format("Current size [%d] %d %d ms %3.3f ", this.size(), delta, lowestDelta, ((double) total / (double) count)));
-				}
-				same.clear();
-				same = null;
-			}
-		}
-		
-	}
-
-	public void simplify(int index, List<Integer> same, Solution solution) {
-		List<Boolean> state = this.generateInitialState();
-		
-		for (TimeSlice timeSlice : solution.getDialogue()) {
-			assignInputToState(state, timeSlice.getInput());
-			propagate(state);
-			
-			Iterator<Integer> it = same.iterator();
-			while (it.hasNext()) {
-				int j = it.next();
-				
-				if (state.get(index).booleanValue() != state.get(j).booleanValue()) {
-					it.remove();
-				}
-			}
-		}
-	}
-
-	
-	
-	public void simplify(List<List<Integer>> same, Solution solution) {
-		List<Boolean> state = this.generateInitialState();
-		
-		for (TimeSlice timeSlice : solution.getDialogue()) {
-			assignInputToState(state, timeSlice.getInput());
-			propagate(state);
-			
-			for (int i = 0; i < same.size(); i++) {
-				Iterator<Integer> it = same.get(i).iterator();
-				while (it.hasNext()) {
-					int j = it.next();
-					
-					if (state.get(i).booleanValue() != state.get(j).booleanValue()) {
-						it.remove();
-					}
-				}
-			}
-		}
-	}
-
-	
 	public void evaluateRepetition(IntGapList same, Solution solution, int index) {
 		List<Boolean> state = this.generateInitialState();
+		this.reset();
 		
 		for (TimeSlice timeSlice : solution.getDialogue()) {
 			assignInputToState(state, timeSlice.getInput());
@@ -364,28 +168,6 @@ public class Circuit extends ArrayList<Port> {
 		}
 	}
 
-	
-	public void simplify(List<IntGapList> same, Solution solution, int shiftMin) {
-		List<Boolean> state = this.generateInitialState();
-		
-		for (TimeSlice timeSlice : solution.getDialogue()) {
-			assignInputToState(state, timeSlice.getInput());
-			propagate(state);
-			
-			for (int i = 0; i < same.size(); i++) {
-				IntGapList intGapList = same.get(i);
-				
-				for (int j = (intGapList.size() -1); j >= 0; j--) {
-					int z = intGapList.get(j);
-					if (state.get(i + shiftMin).booleanValue() != state.get(z).booleanValue()) {
-						intGapList.remove(j);
-					}
-				}
-				
-			}
-		}
-	}
-	
 	public List<Boolean> generateInitialState() {
 		List<Boolean> state = new ArrayList<Boolean>();
 		for (int i =0; i < this.size(); i++) {
@@ -403,6 +185,77 @@ public class Circuit extends ArrayList<Port> {
 	public void propagate(List<Boolean> state) {
 		for (int i = 0; i < this.size(); i++) {
 			state.set(i, this.get(i).evaluate(state));
+		}
+	}
+
+	public String toString() {
+		StringBuffer sb = new StringBuffer();
+		for (int i =0; i < this.size(); i++) {
+			sb.append("[").append(i).append(" ").append(this.get(i).toString()).append("] ");
+		}
+		return sb.toString();
+	}
+
+	public void reset() {
+		for (Port port : this) {
+			port.reset();
+		}
+	}
+
+	public void simplify(List<Integer> output) {
+
+		Set<Port> canRemove = new TreeSet<Port>();
+
+		// Adding all ports!
+		for (Port port : this) {
+			if (!(port instanceof PortInput)) {
+				canRemove.add(port);
+			}
+		}
+
+		// Removing port that can't be removed
+		for (int i = 0; i < output.size(); i++) {
+			Port it = this.get(output.get(i));
+			simplify(canRemove, it);
+		}
+
+		//Removing
+		Port remove[] = (Port []) canRemove.toArray();
+		for (int i = 0; i < remove.length; i++) {
+			int index = this.indexOf(remove[i]);
+			adjustLeft(index);
+			for (int j = i + 1; j < remove.length; j++) {
+				remove[i].adustLeft(index);
+			}
+		}
+	}
+
+	private void adjustLeft(int index) {
+		for (int i = index + 1; i < size(); i++) {
+			this.get(i).adustLeft(index);
+		}
+		this.remove(index);
+	}
+
+	private void simplify(Set<Port> canRemove, Port port) {
+		if (!(port instanceof PortInput)) {
+			canRemove.remove(port);
+
+			if (port instanceof PortAnd) {
+				simplify(canRemove, this.get(((PortAnd) port).getMinor()));
+				simplify(canRemove, this.get(((PortAnd) port).getMajor()));
+			}
+			else if (port instanceof PortOr) {
+				simplify(canRemove, this.get(((PortOr) port).getMinor()));
+				simplify(canRemove, this.get(((PortOr) port).getMajor()));
+			}
+			else if (port instanceof PortNot) {
+				simplify(canRemove, this.get(((PortNot) port).getIndex()));
+			}
+			else if (port instanceof PortMemory) {
+				simplify(canRemove, this.get(((PortMemory) port).getIndex()));
+			}
+
 		}
 	}
 	
