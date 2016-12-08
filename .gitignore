@@ -1,2 +1,8 @@
 bin
 target
+circuito.iml
+circuito.ipr
+circuito.iws
+.classpath
+.project
+.settings
