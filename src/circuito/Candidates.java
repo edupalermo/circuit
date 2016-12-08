@@ -7,6 +7,19 @@ import java.util.List;
 public class Candidates extends ArrayList<List<Integer>> {
 	
 	private static final long serialVersionUID = 1L;
+	
+	private boolean first = true;
+
+	public void compute(List<Boolean> state, List<Boolean> output) {
+		if (first) {
+			first = false;
+			populateInitialCandidates(state, output);
+		}
+		else {
+			check(state, output);
+		}
+	}
+
 
 	private void initiate(int size) {
 		for (int i = 0; i < size; i++) {

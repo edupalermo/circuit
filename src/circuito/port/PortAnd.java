@@ -1,8 +1,9 @@
 package circuito.port;
 
 import java.util.List;
+import java.util.Random;
 
-public class PortAnd implements Port {
+public class PortAnd implements Port, Comparable<Port> {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -52,5 +53,33 @@ public class PortAnd implements Port {
 	public boolean evaluate(List<Boolean> list) {
 		return list.get(this.minor) && list.get(this.major);
 	}
+
+	@Override
+	public int compareTo(Port port) {
+		int answer = 0;
+		if (port instanceof PortAnd) {
+			PortAnd portAnd = (PortAnd) port;
+			answer = this.minor - portAnd.getMinor();
+			if (answer == 0) {
+				answer = this.major - portAnd.getMajor();
+			}
+		}
+		else {
+			answer = this.getClass().getName().compareTo(port.getClass().getName());
+		}
+		return answer;
+	}
 	
+	public static PortAnd random(int size) {
+		Random random = new Random();
+		int l = random.nextInt(size);
+		int r = 0;
+		while ((r = random.nextInt(size)) == l);
+		return new PortAnd(l, r);
+	}
+
+	public String toString() {
+		return "AND[" + this.minor + "," + this.major + "]";
+	}
+
 }
