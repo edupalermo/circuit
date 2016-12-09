@@ -1,7 +1,6 @@
 package circuito.circuit;
 
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -219,18 +218,17 @@ public class Circuit extends ArrayList<Port> {
 			simplify(canRemove, it);
 		}
 
-		//Removing
-		Port remove[] = (Port []) canRemove.toArray();
-		for (int i = 0; i < remove.length; i++) {
-			int index = this.indexOf(remove[i]);
-			adjustLeft(index);
-			for (int j = i + 1; j < remove.length; j++) {
-				remove[i].adustLeft(index);
-			}
+		TreeSet<Integer> sortedIndex = new TreeSet<Integer>();
+		for (Port port : canRemove) {
+			sortedIndex.add(this.indexOf(port));
+		}
+
+		for (Integer index : sortedIndex.descendingSet()) {
+			removePort(index.intValue());
 		}
 	}
 
-	private void adjustLeft(int index) {
+	private void removePort(int index) {
 		for (int i = index + 1; i < size(); i++) {
 			this.get(i).adustLeft(index);
 		}

@@ -34,16 +34,20 @@ public class Application {
 	
 	public static Circuit generateCircuit(List<Solution> solutions) {
 		
-		Circuit circuit = new Circuit(solutions.get(0).getDialogue().get(0)); 
+		Circuit circuit = new Circuit(solutions.get(0).getDialogue().get(0));
+		int oldSize = circuit.size();
 		
 		List<Integer> output = null;
 		
 		while ((output =  getOutput(circuit, solutions)) == null) {
 			circuit.randomEnrich(solutions);
 
-			if (circuit.size() > 500) {
+			if (circuit.size() > (2 * oldSize)) {
+				oldSize = circuit.size();
 				Candidates candidates = getLastOutput(circuit, solutions);
 				circuit.simplify(candidates.getLastValidOutput());
+				
+				
 			}
 		}
 		
