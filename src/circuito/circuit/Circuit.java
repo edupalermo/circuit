@@ -22,7 +22,7 @@ public class Circuit extends ArrayList<Port> {
 	
 	private static final long serialVersionUID = 1L;
 	
-	private Set<Port> discarded = new TreeSet<Port>(); 
+	private volatile Set<Port> discarded = new TreeSet<Port>();
 	
 	public Circuit(int size) {
 		for (int i = 0; i < size; i++) {

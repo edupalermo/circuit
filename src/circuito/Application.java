@@ -1,8 +1,10 @@
 package circuito;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import circuito.util.IoUtils;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.magicwerk.brownies.collections.primitive.IntGapList;
@@ -13,7 +15,11 @@ import circuito.solution.StringSolution;
 import circuito.solution.TimeSlice;
 
 public class Application {
-	
+
+	private static final File CIRCUIT_FILE = new File("circuit.obj");
+
+	private static final long SAVE_DELAY = 300000;
+
 	public static ObjectPool<IntGapList> intGapListPool = new GenericObjectPool<IntGapList>(new IntGapListFactory());
 	static{
 		((GenericObjectPool)intGapListPool).setMaxTotal(-1);
@@ -33,23 +39,35 @@ public class Application {
 	}
 	
 	public static Circuit generateCircuit(List<Solution> solutions) {
-		
-		Circuit circuit = new Circuit(solutions.get(0).getDialogue().get(0));
-		int oldSize = circuit.size();
+
+		Circuit circuit = null;
+
+		if (CIRCUIT_FILE.exists()) {
+			circuit = IoUtils.readObject(CIRCUIT_FILE, Circuit.class);
+		}
+		else {
+			circuit = new Circuit(solutions.get(0).getDialogue().get(0));
+		}
 		
 		List<Integer> output = null;
-		
+
+		long initial = System.currentTimeMillis();
+
 		while ((output =  getOutput(circuit, solutions)) == null) {
 			circuit.randomEnrich(solutions);
 
-			if (circuit.size() > (2 * oldSize)) {
-				oldSize = circuit.size();
+
+			if ((System.currentTimeMillis() - initial) > SAVE_DELAY) {
 				Candidates candidates = getLastOutput(circuit, solutions);
 				circuit.simplify(candidates.getLastValidOutput());
-				
-				
+
+				IoUtils.writeObject(CIRCUIT_FILE, circuit);
+				initial = System.currentTimeMillis();
 			}
+
 		}
+
+
 		
 		return circuit;
 	}
