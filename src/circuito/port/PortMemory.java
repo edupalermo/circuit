@@ -44,9 +44,9 @@ public class PortMemory implements Port, Comparable<Port> {
 		return index;
 	}
 	
-	public boolean evaluate(List<Boolean> list) {
+	public boolean evaluate(boolean list[]) {
 		boolean answer = this.memory;
-		this.memory = list.get(this.index);
+		this.memory = list[this.index];
 		return answer;
 	}
 	

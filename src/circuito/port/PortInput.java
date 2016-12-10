@@ -37,8 +37,8 @@ public class PortInput implements Port, Comparable<Port> {
 	}
 	
 
-	public boolean evaluate(List<Boolean> list) {
-		return list.get(this.index);
+	public boolean evaluate(boolean list[]) {
+		return list[this.index];
 	}
 	
 	@Override

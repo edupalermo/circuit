@@ -1,18 +1,16 @@
-package circuito;
+package circuito.candidates;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-public class Candidates extends ArrayList<List<Integer>> {
+public class Candidates extends ArrayList<List<Integer>> implements CandidatesInterface {
 	
 	private static final long serialVersionUID = 1L;
 	
 	private boolean first = true;
 
-	private List<Integer> lastValidOutput = null;
-
-	public void compute(List<Boolean> state, List<Boolean> output) {
+	public void compute(boolean state[], List<Boolean> output) {
 		if (first) {
 			first = false;
 			populateInitialCandidates(state, output);
@@ -29,16 +27,16 @@ public class Candidates extends ArrayList<List<Integer>> {
 		}
 	}
 	
-	public void populateInitialCandidates(List<Boolean> state, List<Boolean> output) {
+	public void populateInitialCandidates(boolean state[], List<Boolean> output) {
 		if (this.size() > 0) {
 			throw new RuntimeException("Inconsistency");
 		}
 
 		initiate(output.size());
 		
-		for (int i = 0; i < state.size(); i++) {
+		for (int i = 0; i < state.length; i++) {
 			for (int j = 0; j < output.size(); j++) {
-				if (state.get(i).booleanValue() == output.get(j).booleanValue()) {
+				if (state[i] == output.get(j).booleanValue()) {
 					get(j).add(i);
 				}
 			}
@@ -46,7 +44,7 @@ public class Candidates extends ArrayList<List<Integer>> {
 	}
 
 	
-	public void check(List<Boolean> state, List<Boolean> output) {
+	public void check(boolean state[], List<Boolean> output) {
 		if (this.size() != output.size()) {
 			throw new RuntimeException("Inconsistency");
 		}
@@ -56,22 +54,19 @@ public class Candidates extends ArrayList<List<Integer>> {
 			while (it.hasNext()) {
 				int index = it.next();
 				
-				if (state.get(index).booleanValue() != output.get(i).booleanValue()) {
+				if (state[index] != output.get(i).booleanValue()) {
 					it.remove();
 				}
 			}
 		}
 	}
 	
-	public boolean canProvideOutput() {
+	public boolean continueEvaluation() {
 		for (List<Integer> l : this) {
 			if (l.size() == 0) {
 				return false;
 			}
 		}
-
-		this.lastValidOutput = getOutput();
-
 		return true;
 	}
 
@@ -104,18 +99,14 @@ public class Candidates extends ArrayList<List<Integer>> {
 		return output;
 	}
 
-	public List<Integer> getLastValidOutput() {
-		return this.lastValidOutput;
-	}
-
-	public void dump() {
+	public void intermediateDump(List<String> log) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("Candidates: ");
 		for (List<Integer> l : this) {
 			sb.append("[").append(l.size()).append("] ");
 		}
 		sb.deleteCharAt(sb.length() - 1);
-		System.out.println(sb.toString());
+		log.add(sb.toString());
 	}
 
 }

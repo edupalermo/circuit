@@ -50,8 +50,8 @@ public class PortAnd implements Port, Comparable<Port> {
 		return major;
 	}
 	
-	public boolean evaluate(List<Boolean> list) {
-		return list.get(this.minor) && list.get(this.major);
+	public boolean evaluate(boolean list[]) {
+		return list[this.minor] && list[this.major];
 	}
 
 	@Override

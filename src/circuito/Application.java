@@ -4,21 +4,33 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
-import circuito.util.IoUtils;
 import org.apache.commons.pool2.ObjectPool;
 import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.magicwerk.brownies.collections.primitive.IntGapList;
 
+import circuito.candidates.Candidates;
+import circuito.candidates.CandidatesInterface;
+import circuito.candidates.LatestCandidates;
 import circuito.circuit.Circuit;
+import circuito.period.Period;
 import circuito.solution.Solution;
 import circuito.solution.StringSolution;
 import circuito.solution.TimeSlice;
+import circuito.util.IoUtils;
 
 public class Application {
 
 	private static final File CIRCUIT_FILE = new File("circuit.obj");
+	
+	private static final long SECOND = 1000; 
+	private static final long MINUTE = 60 * SECOND; 
+	private static final long HOUR = 60 * MINUTE;
 
-	private static final long SAVE_DELAY = 300000;
+	private static final long SAVE_DELAY = 5 * MINUTE;
+	private static final long SIMPLIFICATION_DELAY = HOUR;
+	private static final long DUMP_DELAY = 10 * SECOND;
+	
+	private static final List<String> log = new ArrayList<String>();
 
 	public static ObjectPool<IntGapList> intGapListPool = new GenericObjectPool<IntGapList>(new IntGapListFactory());
 	static{
@@ -32,6 +44,7 @@ public class Application {
 		solutions.add(new StringSolution("a", "vogal"));
 		solutions.add(new StringSolution("b", "consoante"));
 		solutions.add(new StringSolution("c", "consoante"));
+		solutions.add(new StringSolution("d", "consoante"));
 		
 		Circuit circuit = generateCircuit(solutions);
 		System.out.println("Generates circuit size: " + circuit.size());
@@ -44,6 +57,8 @@ public class Application {
 
 		if (CIRCUIT_FILE.exists()) {
 			circuit = IoUtils.readObject(CIRCUIT_FILE, Circuit.class);
+			LatestCandidates candidates = (LatestCandidates) getLastOutput(circuit, solutions);
+			circuit.simplify(candidates.getBetterOutput());
 		}
 		else {
 			circuit = new Circuit(solutions.get(0).getDialogue().get(0));
@@ -52,18 +67,40 @@ public class Application {
 		List<Integer> output = null;
 
 		long initial = System.currentTimeMillis();
+		
+		Period save = new Period(SAVE_DELAY);
+		Period simplify = new Period(SIMPLIFICATION_DELAY);
+		Period dump = new Period(DUMP_DELAY);
 
-		while ((output =  getOutput(circuit, solutions)) == null) {
+		while ((output =  getOutput(circuit, solutions, getPercent(initial))) == null) {
 			circuit.randomEnrich(solutions);
+			circuit.orderedEnrich(solutions);
 
-
-			if ((System.currentTimeMillis() - initial) > SAVE_DELAY) {
-				Candidates candidates = getLastOutput(circuit, solutions);
-				circuit.simplify(candidates.getLastValidOutput());
-
+			if (save.alarm()) {
 				IoUtils.writeObject(CIRCUIT_FILE, circuit);
-				initial = System.currentTimeMillis();
+				log.add("Saving circuit");
 			}
+			
+			if (simplify.alarm()) {
+				int oldSize = circuit.size();
+				LatestCandidates candidates = (LatestCandidates) getLastOutput(circuit, solutions);
+				circuit.simplify(candidates.getBetterOutput());
+				log.add(String.format("Smplifying circuit [%d] - [%d]", oldSize, circuit.size()));
+			}
+			
+
+			if (dump.alarm()) {
+				LatestCandidates candidates = (LatestCandidates) getLastOutput(circuit, solutions);
+				log.add(String.format("%s Circuit: %d ", candidates.dump(), circuit.size()));
+			}
+			
+			
+			for (String s : log) {
+				System.out.println(s);
+			}
+			log.clear();
+			
+
 
 		}
 
@@ -72,11 +109,15 @@ public class Application {
 		return circuit;
 	}
 	
+	private static String getPercent(long initial) {
+		double percent = 100d * (double)(System.currentTimeMillis() - initial) / (double)SAVE_DELAY;
+		return String.format("%3.3f%%", percent);
+	}
 	
-	private static List<Integer> getOutput(Circuit circuit, List<Solution> solutions) {
-		System.out.println();
-		System.out.println();
-		System.out.println(String.format("Solutions to process %d circuit size %d", solutions.size(), circuit.size()));
+	
+	private static List<Integer> getOutput(Circuit circuit, List<Solution> solutions, String percent) {
+		//log.add("\n");
+		//log.add(String.format("Solutions to process %d circuit size %d simplification %s", solutions.size(), circuit.size(), percent));
 		//System.out.println("Circuit: " + circuit.toString());
 		
 		Candidates candidates = new Candidates();
@@ -84,12 +125,12 @@ public class Application {
 		for (int i = 0; i < solutions.size(); i++) {
 			//System.out.println(String.format("Working on solution [%d]", i));
 			Solution solution = solutions.get(i);
-			evaluate(i, circuit, solution, candidates);
-			if (!candidates.canProvideOutput()) {
+			evaluate(i, circuit, solution, candidates, true);
+			if (!candidates.continueEvaluation()) {
 				break;
 			}
 			else {
-				System.out.println("#solution closed#");
+				//log.add("#solution closed#");
 			}
 		}
 		
@@ -97,13 +138,13 @@ public class Application {
 	}
 
 
-	private static Candidates getLastOutput(Circuit circuit, List<Solution> solutions) {
-		Candidates candidates = new Candidates();
+	private static CandidatesInterface getLastOutput(Circuit circuit, List<Solution> solutions) {
+		LatestCandidates candidates = new LatestCandidates();
 
 		for (int i = 0; i < solutions.size(); i++) {
 			Solution solution = solutions.get(i);
-			evaluate(i, circuit, solution, candidates);
-			if (!candidates.canProvideOutput()) {
+			evaluate(i, circuit, solution, candidates, false);
+			if (!candidates.continueEvaluation()) {
 				break;
 			}
 		}
@@ -113,12 +154,14 @@ public class Application {
 
 
 
-	private static void evaluate(int solutionIndex, Circuit circuit, Solution solution, Candidates candidates)  {
+	private static void evaluate(int solutionIndex, Circuit circuit, Solution solution, CandidatesInterface candidates, boolean dump)  {
 		
-		List<Boolean> state = circuit.generateInitialState();
+		boolean state[] = new boolean[circuit.size()];
 		circuit.reset();
 		for (int i = 0; i < solution.getDialogue().size(); i++) {
-			System.out.println(String.format("Working on solution [%d] on Dialogue [%d]", solutionIndex, i));
+			if (dump) {
+				// log.add(String.format("Working on solution [%d] on Dialogue [%d]", solutionIndex, i));
+			}
 
 			TimeSlice timeSlice = solution.getDialogue().get(i);
 
@@ -128,9 +171,11 @@ public class Application {
 			//System.out.println("State: " + booleanListToString(state));
 			candidates.compute(state, timeSlice.getOutput());
 			
-			candidates.dump();
+			if (dump) {
+				//candidates.intermediateDump(log);
+			}
 			
-			if (candidates.canProvideOutput()) {
+			if (candidates.continueEvaluation()) {
 				//System.out.println("Current Output: " + integerListToString(candidates.getOutput()));
 			}
 			else {

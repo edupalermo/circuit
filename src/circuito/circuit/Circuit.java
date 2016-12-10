@@ -9,6 +9,7 @@ import java.util.TreeSet;
 import org.magicwerk.brownies.collections.primitive.IntGapList;
 
 import circuito.Application;
+import circuito.Generator;
 import circuito.port.Port;
 import circuito.port.PortAnd;
 import circuito.port.PortInput;
@@ -22,12 +23,15 @@ public class Circuit extends ArrayList<Port> {
 	
 	private static final long serialVersionUID = 1L;
 	
-	private volatile Set<Port> discarded = new TreeSet<Port>();
+	private transient Set<Port> discarded = new TreeSet<Port>();
+	
+	private transient Generator generator = null;
 	
 	public Circuit(int size) {
 		for (int i = 0; i < size; i++) {
 			this.add(new PortInput(i));
 		}
+		this.generator = new Generator(0, size);
 	}
 	
 	public Circuit(TimeSlice timeSlice) {
@@ -38,6 +42,23 @@ public class Circuit extends ArrayList<Port> {
 		boolean stop = false;
 		do {
 			Port newPort = generatePort();
+			if (available(newPort)) {
+				this.add(newPort);
+				
+				if (this.haveUniqueResponse(solutions, this.size() -1)) {
+					stop = true;
+				}
+				else {
+					this.discarded.add(this.remove(this.size() - 1));
+				}
+			}
+		} while (!stop);
+	}
+	
+	public void orderedEnrich(List<Solution> solutions) {
+		boolean stop = false;
+		do {
+			Port newPort = generator.next(this.size());
 			if (available(newPort)) {
 				this.add(newPort);
 				
@@ -148,7 +169,7 @@ public class Circuit extends ArrayList<Port> {
 
 	
 	public void evaluateRepetition(IntGapList same, Solution solution, int index) {
-		List<Boolean> state = this.generateInitialState();
+		boolean state[] = new boolean[this.size()];
 		this.reset();
 		
 		for (TimeSlice timeSlice : solution.getDialogue()) {
@@ -157,7 +178,7 @@ public class Circuit extends ArrayList<Port> {
 			
 			for (int i = (same.size() -1); i >= 0; i--) {
 				int j = same.get(i);
-				if (state.get(index).booleanValue() != state.get(j).booleanValue()) {
+				if (state[index] != state[j]) {
 					same.remove(i);
 					if (same.size() == 0) {
 						return; // Nothing to simplyfy
@@ -175,15 +196,15 @@ public class Circuit extends ArrayList<Port> {
 		return state;
 	}
 
-	public void assignInputToState(List<Boolean> state, List<Boolean> input) {
+	public void assignInputToState(boolean state[], List<Boolean> input) {
 		for (int i = 0; i < input.size(); i++) {
-			state.set(i, input.get(i));
+			state[i] = input.get(i).booleanValue();
 		}
 	}
 	
-	public void propagate(List<Boolean> state) {
+	public void propagate(boolean state[]) {
 		for (int i = 0; i < this.size(); i++) {
-			state.set(i, this.get(i).evaluate(state));
+			state[i] = this.get(i).evaluate(state);
 		}
 	}
 
@@ -226,6 +247,8 @@ public class Circuit extends ArrayList<Port> {
 		for (Integer index : sortedIndex.descendingSet()) {
 			removePort(index.intValue());
 		}
+		
+		this.generator = new Generator(0, this.size());
 	}
 
 	private void removePort(int index) {
