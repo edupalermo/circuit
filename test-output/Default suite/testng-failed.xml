@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd">
+<suite name="Failed suite [Default suite]">
+  <test name="Default test(failed)" preserve-order="true">
+    <classes>
+      <class name="org.circuit.util.TestByteUtils">
+        <methods>
+          <include name="testBytesNeeded" invocation-numbers="8 9 10"/>
+        </methods>
+      </class> <!-- org.circuit.util.TestByteUtils -->
+    </classes>
+  </test> <!-- Default test(failed) -->
+</suite> <!-- Failed suite [Default suite] -->
