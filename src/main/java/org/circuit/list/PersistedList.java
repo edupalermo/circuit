@@ -18,9 +18,12 @@ public class PersistedList<T> implements List<T> {
 	private File file = ListUtils.generateFile(folder);
 	
 	private RandomAccessFile randomAccessFile = null;
+
+
+	//All items will have LENGTH and VALUE
 	
-	private int dataLengthSize = 1;
-	private int dataItselfSize = 0;
+	private int lengthByteSize = 1;
+	private int valueByteSize = 0;
 	
 	public PersistedList() {
 		try {
@@ -166,7 +169,7 @@ public class PersistedList<T> implements List<T> {
 				for (int i = 0; i < getPhysicalElementsCount(); i++) {
 					randomAccessFile.seek(i * getRecordSize());
 					
-					int dataLength = this.getDataLenght(i);
+					byte record[] = this.getRecord(i);
 					
 
 					
@@ -186,7 +189,7 @@ public class PersistedList<T> implements List<T> {
 	private byte[] getBytes(long index, int dataLength) {
 		byte array[] = null;
 		try {
-			randomAccessFile.seek(index * getRecordSize() + this.dataLengthSize);
+			randomAccessFile.seek(index * getRecordSize() + this.lengthByteSize);
 			array = new byte[dataLength];
 			randomAccessFile.read(array);
 			
@@ -201,7 +204,7 @@ public class PersistedList<T> implements List<T> {
 		int answer = 0;
 		try {
 			randomAccessFile.seek(index * getRecordSize());
-			byte array[] = new byte[this.dataLengthSize];
+			byte array[] = new byte[this.lengthByteSize];
 			randomAccessFile.read(array);
 			answer = ByteUtils.toInt(array);
 			
@@ -210,21 +213,55 @@ public class PersistedList<T> implements List<T> {
 		}
 		return answer;
 	}
-	
+
+	private byte[] getLengthBytes(long index) {
+		byte answer[] = null;
+		try {
+			randomAccessFile.seek(index * getRecordSize());
+			answer = new byte[this.lengthByteSize];
+			randomAccessFile.read(answer);
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+		return answer;
+	}
+
+	private byte[] getRecord(long index) {
+		byte answer[] = null;
+		try {
+			randomAccessFile.seek(index * getRecordSize());
+			int total = this.lengthByteSize + this.valueByteSize;
+			int read = 0;
+			answer = new byte[total];
+
+			do {
+				read += randomAccessFile.read(answer, read, (total - read));
+			} while (read < total);
+
+
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+
+		return answer;
+	}
+
 	private boolean needToRecreateFile(int newDataLengthSize, int newDataItselfSize) {
-		return (newDataLengthSize > this.dataLengthSize) || (newDataItselfSize > this.dataItselfSize); 
+		return (newDataLengthSize > this.lengthByteSize) || (newDataItselfSize > this.valueByteSize);
 	}
 	
 	private long getPhysicalElementsCount() {
 		try {
-			return randomAccessFile.length() / (dataLengthSize + dataItselfSize);
+			return randomAccessFile.length() / (lengthByteSize + valueByteSize);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
 	
 	private long getRecordSize() {
-		return this.dataItselfSize + this.dataLengthSize;
+		return this.valueByteSize + this.lengthByteSize;
 	}
 
 	
