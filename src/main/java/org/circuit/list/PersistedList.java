@@ -7,56 +7,304 @@ import java.util.Collection;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Set;
+import java.util.TreeSet;
 
 import org.circuit.util.ByteUtils;
 import org.circuit.util.IoUtils;
 import org.circuit.util.ListUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-public class PersistedList<T> implements List<T> {
+public class PersistedList<E> implements List<E> {
 	
-	private final static File folder = new File(".");
-	private File file = ListUtils.generateFile(folder);
-	
+	private final transient static Logger logger = LoggerFactory.getLogger(PersistedList.class);
+
+	private final static File folder = new File("c:\\temp\\list");
+	private File file = this.generateTemporaryFile();
+
 	private RandomAccessFile randomAccessFile = null;
+
+	private static int GAP_LIMIT = 100000;
 	
-	private int dataLengthSize = 1;
-	private int dataItselfSize = 0;
+	private Set<Long> removedPhysicaIndices = new TreeSet<Long>();
+
+	// Length And Value
+
+	private int lengthSize = 0;
+	private int valueSize = 0;
 	
+	private long modCount = 0;
+	
+	private int size = 0;
+
 	public PersistedList() {
 		try {
-			randomAccessFile = new RandomAccessFile(ListUtils.generateFile(file), "rw");
+			randomAccessFile = new RandomAccessFile(file, "rw");
 		} catch (Exception e) {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
 	@Override
-	public boolean add(T e) {
-		if (e == null) {
-			throw new RuntimeException("Inconsistency");
+	public boolean add(E element) {
+		try {
+			if (element == null) {
+				throw new RuntimeException("Inconsistency");
+			}
+
+			byte valueData[] = IoUtils.objectToBytes(element);
+			
+			int newLengthSize = ByteUtils.bytesNeededToRepresent(valueData.length);
+			
+			if (needToRecreateFile(newLengthSize, valueData.length)) {
+				this.recreateFile(newLengthSize, valueData.length);
+			}
+			
+			randomAccessFile.seek(randomAccessFile.length());
+			
+			byte lengthData[] = ByteUtils.toByteArray(valueData.length);
+			
+			IoUtils.fillZeroBytes(randomAccessFile, lengthData.length, this.lengthSize);
+			randomAccessFile.write(lengthData);
+			randomAccessFile.write(valueData);
+			IoUtils.fillZeroBytes(randomAccessFile, valueData.length, this.valueSize);
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
 		}
+		this.size++;
 		
-		byte[] data = IoUtils.objectToBytes(e);
+		this.modCount++;
 		
-		int newDataLengthSize = ByteUtils.bytesNeededToRepresent(data.length);
-		
-		
+//		checkConsistency();
 		return true;
 	}
 	
+	@Override
+	public E get(int index) {
+		return this.getByPhysicalIndex(this.getPhysicalIndex(index));
+	}
 
 	@Override
-	public void add(int index, T element) {
+	public int size() {
+		return this.size;
+	}
+
+	@Override
+	public Iterator<E> iterator() {
+		return new PersistedIterator<E>(this);
+	}
+
+	@Override
+	public E remove(int index) {
+		if ((index < 0) || (index >= size)) {
+			throw new ArrayIndexOutOfBoundsException();
+		}
+		
+		long physicalIndex = this.getPhysicalIndex(index);
+		E e = this.getByPhysicalIndex(physicalIndex);
+		this.removedPhysicaIndices.add(physicalIndex);
+
+		this.modCount++;
+		this.size--;
+		
+		if (this.removedPhysicaIndices.size() >= GAP_LIMIT) {
+			this.recreateFile(this.lengthSize, this.valueSize);
+		}
+		
+		//checkConsistency();
+		
+		return e;
+	}
+
+	
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	private void checkConsistency() {
+		
+		if (getRecordSize() != 0) {
+			try {
+				logger.info(String.format("%d %d", (this.randomAccessFile.length() /getRecordSize()), (this.size + this.removedPhysicaIndices.size())));
+				if ((this.randomAccessFile.length() /getRecordSize()) != (this.size + this.removedPhysicaIndices.size())) {
+					throw new RuntimeException("Inconsistency!");
+				}
+			} catch (IOException e) {
+				throw new RuntimeException(e);
+			}
+			
+		}
+		
+	}
+	
+	
+	public E getByPhysicalIndex(long physicalIndex) {
+		byte record[] = this.getRecord(physicalIndex);
+		int currentValueLength = ByteUtils.toInt(record, 0, this.lengthSize);
+		
+		return (E) IoUtils.bytesToObject(record, this.lengthSize, currentValueLength);
+	}
+	
+	
+	private long getPhysicalIndex(long index){
+		
+		long physicalIndex = index;
+		
+		long j = 0;
+		
+		Iterator<Long> it = this.removedPhysicaIndices.iterator();
+		
+		while (it.hasNext() && (it.next().longValue() <= physicalIndex)) {
+			physicalIndex++;
+		}
+		
+		return physicalIndex;
+		
+	}
+
+	
+	
+	protected void recreateFile() {
+		this.recreateFile(this.lengthSize, this.valueSize);
+	}
+
+	private void recreateFile(int newLengthSize, int newValueSize) {
+		
+		//checkConsistency();
+
+		try {
+			System.out.println("Recreating file.");
+			File newFile = this.generateTemporaryFile();
+			RandomAccessFile newRandomAccessFile = new RandomAccessFile(newFile, "rw");
+
+			for (int i = 0; i < getPhysicalElementsCount(); i++) {
+				
+				if (this.removedPhysicaIndices.contains(Long.valueOf(i))) {
+					continue;
+				}
+
+				byte data[] = getRecord(i);
+
+				if ((this.lengthSize < newLengthSize) && (this.valueSize >= newValueSize)) {
+					IoUtils.fillZeroBytes(newRandomAccessFile, this.lengthSize, newLengthSize);
+					newRandomAccessFile.write(data);
+				} else if ((this.lengthSize >= newLengthSize) && (this.valueSize < newValueSize)) {
+					newRandomAccessFile.write(data);
+					IoUtils.fillZeroBytes(newRandomAccessFile, this.valueSize, newValueSize);
+				} else if ((this.lengthSize < newLengthSize) && (this.valueSize < newValueSize)) {
+					IoUtils.fillZeroBytes(newRandomAccessFile, this.lengthSize, newLengthSize);
+					newRandomAccessFile.write(data);
+					IoUtils.fillZeroBytes(newRandomAccessFile, this.valueSize, newValueSize);
+				} else {
+					newRandomAccessFile.write(data);
+				}
+			}
+			
+			this.removedPhysicaIndices.clear();
+			
+			this.randomAccessFile.close();
+			this.randomAccessFile = newRandomAccessFile;
+			
+			if (!this.file.delete()) {
+				System.err.println(String.format("Fail to delete file %s", this.file.getAbsoluteFile()));
+			}
+			this.file = newFile;
+			
+			this.lengthSize = newLengthSize;
+			this.valueSize = newValueSize;
+			
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+	
+	private File generateTemporaryFile() {
+		File file = ListUtils.generateFile(folder);
+		file.deleteOnExit();
+		System.out.println(file.getAbsolutePath());
+		return file;
+	}
+
+	private byte[] getRecord(long physicaIndex) {
+		byte array[] = null;
+		try {
+			int recordSize = getRecordSize();
+			randomAccessFile.seek(physicaIndex * recordSize);
+			array = new byte[recordSize];
+			randomAccessFile.readFully(array);
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+		return array;
+	}
+
+	private boolean needToRecreateFile(int newDataLengthSize, int newDataItselfSize) {
+		return (newDataLengthSize > this.lengthSize) || (newDataItselfSize > this.valueSize);
+	}
+
+	private long getPhysicalElementsCount() {
+		return this.size + this.removedPhysicaIndices.size();
+	}
+
+	private int getRecordSize() {
+		return this.valueSize + this.lengthSize;
+	}
+	
+	protected long getModCount() {
+		return this.modCount;
+	}
+	
+	@Override
+	protected void finalize() throws Throwable {
+		System.out.println("Calling finalize...");
+		this.randomAccessFile.close();
+		if (this.file.exists()) {
+			this.file.delete();
+		}
+	}
+
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	@Override
+	public void add(int index, E element) {
+		throw new RuntimeException("Not Implemented");
+		
+	}
+
+	@Override
+	public boolean addAll(Collection<? extends E> c) {
 		throw new RuntimeException("Not Implemented");
 	}
 
 	@Override
-	public boolean addAll(Collection<? extends T> c) {
-		throw new RuntimeException("Not Implemented");
-	}
-
-	@Override
-	public boolean addAll(int index, Collection<? extends T> c) {
+	public boolean addAll(int index, Collection<? extends E> c) {
 		throw new RuntimeException("Not Implemented");
 	}
 
@@ -74,12 +322,7 @@ public class PersistedList<T> implements List<T> {
 	public boolean containsAll(Collection<?> c) {
 		throw new RuntimeException("Not Implemented");
 	}
-
-	@Override
-	public T get(int index) {
-		throw new RuntimeException("Not Implemented");
-	}
-
+	
 	@Override
 	public int indexOf(Object o) {
 		throw new RuntimeException("Not Implemented");
@@ -91,32 +334,22 @@ public class PersistedList<T> implements List<T> {
 	}
 
 	@Override
-	public Iterator<T> iterator() {
-		throw new RuntimeException("Not Implemented");
-	}
-
-	@Override
 	public int lastIndexOf(Object o) {
 		throw new RuntimeException("Not Implemented");
 	}
 
 	@Override
-	public ListIterator<T> listIterator() {
+	public ListIterator<E> listIterator() {
 		throw new RuntimeException("Not Implemented");
 	}
 
 	@Override
-	public ListIterator<T> listIterator(int index) {
+	public ListIterator<E> listIterator(int index) {
 		throw new RuntimeException("Not Implemented");
 	}
 
 	@Override
 	public boolean remove(Object o) {
-		throw new RuntimeException("Not Implemented");
-	}
-
-	@Override
-	public T remove(int index) {
 		throw new RuntimeException("Not Implemented");
 	}
 
@@ -131,17 +364,12 @@ public class PersistedList<T> implements List<T> {
 	}
 
 	@Override
-	public T set(int index, T element) {
+	public E set(int index, E element) {
 		throw new RuntimeException("Not Implemented");
 	}
 
 	@Override
-	public int size() {
-		throw new RuntimeException("Not Implemented");
-	}
-
-	@Override
-	public List<T> subList(int fromIndex, int toIndex) {
+	public List<E> subList(int fromIndex, int toIndex) {
 		throw new RuntimeException("Not Implemented");
 	}
 
@@ -157,75 +385,58 @@ public class PersistedList<T> implements List<T> {
 
 	
 	
-	private void recreateFile(int newDataLengthSize, int newDataItselfSize) {
+
+	
+	
+	
+	
+	
+	
+	
+	public static void main (String args[]) {
 		
-		try {
-			if (needToRecreateFile(newDataLengthSize, newDataItselfSize)) {
-				RandomAccessFile newRandomAccessFile = new RandomAccessFile(ListUtils.generateFile(file), "rw");
-				
-				for (int i = 0; i < getPhysicalElementsCount(); i++) {
-					randomAccessFile.seek(i * getRecordSize());
-					
-					int dataLength = this.getDataLenght(i);
-					
+		PersistedList<String> persistedList = new PersistedList<String>();
+		
+		persistedList.add("Eduardo");
+		persistedList.add("Gomes");
+		persistedList.add("Eduardo Gomes Palermo");
+		
+		//for (int i = 0; i< 256; i++) {
+		//	persistedList.add(Integer.toString(i));
+		//}
+		persistedList.add("123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
+		
+		persistedList.remove(0);
+		persistedList.remove(0);
+		persistedList.remove(1);
+		
+		persistedList.add("Lasst");
 
-					
-				}
-			}
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		persistedList.remove(1);
+		persistedList.add("Last one");
+		persistedList.add("12345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890123456789012345678901234567890");
+		
+		while (persistedList.size() > 0) {
+			persistedList.remove(persistedList.size() - 1);
 		}
 		
-	}
-	
-	private byte[] getBytes(long index) {
-		int dataLenght = getDataLenght(index);
-		return getBytes(index, dataLenght);
-	}
+		persistedList.add("0");
+		persistedList.add("1");
+		persistedList.add("2");
+		
+		persistedList.remove(1);
+		
+		persistedList.add("4");
+		persistedList.add("6");
 
-	private byte[] getBytes(long index, int dataLength) {
-		byte array[] = null;
-		try {
-			randomAccessFile.seek(index * getRecordSize() + this.dataLengthSize);
-			array = new byte[dataLength];
-			randomAccessFile.read(array);
-			
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		return array;
-	}
-
-	
-	private int getDataLenght(long index) {
-		int answer = 0;
-		try {
-			randomAccessFile.seek(index * getRecordSize());
-			byte array[] = new byte[this.dataLengthSize];
-			randomAccessFile.read(array);
-			answer = ByteUtils.toInt(array);
-			
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-		return answer;
-	}
-	
-	private boolean needToRecreateFile(int newDataLengthSize, int newDataItselfSize) {
-		return (newDataLengthSize > this.dataLengthSize) || (newDataItselfSize > this.dataItselfSize); 
-	}
-	
-	private long getPhysicalElementsCount() {
-		try {
-			return randomAccessFile.length() / (dataLengthSize + dataItselfSize);
-		} catch (IOException e) {
-			throw new RuntimeException(e);
+		persistedList.remove(0);
+		persistedList.remove(1);
+		
+		persistedList.recreateFile();
+		
+		for (int i = 0; i < persistedList.size(); i++) {
+			System.out.println(i + " - " + persistedList.get(i));
 		}
 	}
-	
-	private long getRecordSize() {
-		return this.dataItselfSize + this.dataLengthSize;
-	}
-
 	
 }

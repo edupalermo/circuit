@@ -14,8 +14,9 @@ import org.circuit.period.Period;
 import org.circuit.solution.Solution;
 import org.circuit.solution.StringSolution;
 import org.circuit.solution.TimeSlice;
-import org.circuit.util.IoUtils;
 import org.magicwerk.brownies.collections.primitive.IntGapList;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Application {
 
@@ -29,7 +30,9 @@ public class Application {
 	private static final long SIMPLIFICATION_DELAY = HOUR;
 	private static final long DUMP_DELAY = 10 * SECOND;
 	
-	private static final List<String> log = new ArrayList<String>();
+	private static final boolean validateConsistency = false;
+	
+	private static final Logger logger = LoggerFactory.getLogger(Application.class);
 
 	public static ObjectPool<IntGapList> intGapListPool = new GenericObjectPool<IntGapList>(new IntGapListFactory());
 	static{
@@ -44,6 +47,7 @@ public class Application {
 		solutions.add(new StringSolution("b", "consoante"));
 		solutions.add(new StringSolution("c", "consoante"));
 		solutions.add(new StringSolution("d", "consoante"));
+		solutions.add(new StringSolution("e", "vogal"));
 		
 		Circuit circuit = generateCircuit(solutions);
 		System.out.println("Generates circuit size: " + circuit.size());
@@ -54,15 +58,15 @@ public class Application {
 
 		Circuit circuit = null;
 
-		if (CIRCUIT_FILE.exists()) {
-			circuit = IoUtils.readObject(CIRCUIT_FILE, Circuit.class);
-			LatestCandidates candidates = (LatestCandidates) getLastOutput(circuit, solutions);
-			circuit.simplify(candidates.getBetterOutput());
-			log.add(String.format("%s Circuit: %d ", candidates.dump(), circuit.size()));
-		}
-		else {
+		//if (CIRCUIT_FILE.exists()) {
+		//	circuit = IoUtils.readObject(CIRCUIT_FILE, Circuit.class);
+		//	LatestCandidates candidates = (LatestCandidates) getLastOutput(circuit, solutions);
+		//	circuit.simplify(candidates.getBetterOutput());
+		//	log.add(String.format("%s Circuit: %d ", candidates.dump(), circuit.size()));
+		//}
+		//else {
 			circuit = new Circuit(solutions.get(0).getDialogue().get(0));
-		}
+		//}
 		
 		List<Integer> output = null;
 
@@ -73,34 +77,49 @@ public class Application {
 		Period dump = new Period(DUMP_DELAY);
 
 		while ((output =  getOutput(circuit, solutions, getPercent(initial))) == null) {
-			circuit.randomEnrich(solutions);
-			circuit.orderedEnrich(solutions);
-
-			if (save.alarm()) {
-				IoUtils.writeObject(CIRCUIT_FILE, circuit);
-				log.add("Saving circuit");
+			//circuit.randomEnrich(solutions);
+			
+			int size = circuit.size();
+			for (int i = 0; i < (size / 2); i++) {
+				circuit.orderedEnrich(size);
 			}
 			
-			if (simplify.alarm()) {
-				int oldSize = circuit.size();
+			if (validateConsistency) {
+				for (int k = 0; k < circuit.size(); k++) {
+					if (!circuit.get(k).checkConsistency(k)) {
+						throw new RuntimeException(String.format("Inconsistency [%d] %s ",k , circuit.get(k).toString()));
+					}
+				}
+			}
+
+			
+			circuit.removeDuplicatePorts(solutions);
+
+			if (validateConsistency) {
+				for (int k = 0; k < circuit.size(); k++) {
+					if (!circuit.get(k).checkConsistency(k)) {
+						throw new RuntimeException(String.format("Inconsistency [%d] %s ",k , circuit.get(k).toString()));
+					}
+				}
+			}
+			
+			//if (save.alarm()) {
+			//	IoUtils.writeObject(CIRCUIT_FILE, circuit);
+			//	log.add("Saving circuit");
+			//}
+			
+			//if (simplify.alarm()) {
+			//	int oldSize = circuit.size();
+			//	LatestCandidates candidates = (LatestCandidates) getLastOutput(circuit, solutions);
+			//	circuit.simplify(candidates.getBetterOutput());
+			//	log.add(String.format("Smplifying circuit [%d] - [%d]", oldSize, circuit.size()));
+			//}
+			
+
+			//if (dump.alarm()) {
 				LatestCandidates candidates = (LatestCandidates) getLastOutput(circuit, solutions);
-				circuit.simplify(candidates.getBetterOutput());
-				log.add(String.format("Smplifying circuit [%d] - [%d]", oldSize, circuit.size()));
-			}
-			
-
-			if (dump.alarm()) {
-				LatestCandidates candidates = (LatestCandidates) getLastOutput(circuit, solutions);
-				log.add(String.format("%s Circuit: %d ", candidates.dump(), circuit.size()));
-			}
-			
-			
-			for (String s : log) {
-				System.out.println(s);
-			}
-			log.clear();
-			
-
+				logger.info(String.format("%s Circuit: %d ", candidates.dump(), circuit.size()));
+			//}
 
 		}
 

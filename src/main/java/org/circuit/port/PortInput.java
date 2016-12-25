@@ -1,7 +1,5 @@
 package org.circuit.port;
 
-import java.util.List;
-
 public class PortInput implements Port, Comparable<Port> {
 
 	private static final long serialVersionUID = 1L;
@@ -53,8 +51,20 @@ public class PortInput implements Port, Comparable<Port> {
 		}
 		return answer;
 	}
+	
+	@Override
+	public boolean references(int index) {
+		return false;
+	}
+
 
 	public String toString() {
 		return "INPUT[" + this.index + "]";
 	}
+	
+	@Override
+	public boolean checkConsistency(int index) {
+		return true;
+	}
+
 }

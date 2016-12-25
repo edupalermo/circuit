@@ -21,7 +21,9 @@ public class StringSolution extends Solution {
 		for (byte b : input.getBytes()) {
 			List<Boolean> listInput = byteToList(b);
 			listInput.add(clock.thick());
-			listInput.add(true);
+			listInput.add(true); // Always true
+			listInput.add(false);  // Always false
+			listInput.add(true); // Speaking
 			
 			List<Boolean> listOutput = byteToList(BYTE_ZERO);
 			listOutput.add(false);
@@ -32,7 +34,9 @@ public class StringSolution extends Solution {
 		for (byte b : output.getBytes()) {
 			List<Boolean> listInput = byteToList(BYTE_ZERO);
 			listInput.add(clock.thick());
-			listInput.add(false);
+			listInput.add(true); // Always true
+			listInput.add(false);  // Always false
+			listInput.add(false);  // Hearing
 			
 			List<Boolean> listOutput = byteToList(b);
 			listOutput.add(true);

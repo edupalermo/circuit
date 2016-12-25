@@ -22,17 +22,23 @@ public class ByteUtils {
 		return answer;
 	}
 
-	public static byte[] toByteArray(int input, int size) {
-		byte[] answer = null;
+	public static int toInt(byte array[], int offset, int size) {
+		int answer = 0;
 		
-		if (size < bytesNeededToRepresent(input)) {
-			throw new RuntimeException("Inconsistency");
+		for (int i = offset; i < (offset + size); i++) {
+			answer += (array[i] & 0xFF) * Math.pow(256, (size - 1) - (i - offset));
 		}
 		
-		answer = new byte[size];
+		return answer;
+	}
+
+	public static byte[] toByteArray(int input) {
+		int size = bytesNeededToRepresent(input);
+		
+		byte[] answer = new byte[size];
 		
 		for (int i = 0; i < size; i++) {
-			answer[i] = (byte) (Math.pow(256, size - i) % input);
+			answer[i] = (byte) ((input / Math.pow(256, i)) % 256);
 		}
 		
 		return answer;

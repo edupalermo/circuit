@@ -96,15 +96,14 @@ public class Generator {
 	
 	public static void main(String args[]) throws Exception {
 		
-		Generator generator = new Generator(0, 2);
+		long total = 2;
+		Generator generator = new Generator(0, (int) total);
 		
 		BufferedReader br = new BufferedReader(new InputStreamReader(System.in));
-		double total = 5;
 		while (true) {
-			generator.next((int) total);
-			total *= 1.2;
-			//System.out.println(generator.next(5));
-			//br.readLine();
+			System.out.println(String.format("%d %s ", total, generator.next((int) total)));
+			total++;
+			br.readLine();
 		}
 	}
 }

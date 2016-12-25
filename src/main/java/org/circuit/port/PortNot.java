@@ -1,6 +1,5 @@
 package org.circuit.port;
 
-import java.util.List;
 import java.util.Random;
 
 public class PortNot implements Port, Comparable<Port> {
@@ -34,6 +33,11 @@ public class PortNot implements Port, Comparable<Port> {
 			this.index--;
 		}
 	}
+	
+	@Override
+	public boolean references(int index) {
+		return index == this.index;
+	}
 
 	public int getIndex() {
 		return index;
@@ -64,6 +68,11 @@ public class PortNot implements Port, Comparable<Port> {
 
 	public String toString() {
 		return "NOT[" + this.index + "]";
+	}
+
+	@Override
+	public boolean checkConsistency(int index) {
+		return (this.index < index);
 	}
 
 }

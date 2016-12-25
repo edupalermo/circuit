@@ -1,6 +1,5 @@
 package org.circuit.port;
 
-import java.util.List;
 import java.util.Random;
 
 public class PortMemory implements Port, Comparable<Port> {
@@ -51,6 +50,11 @@ public class PortMemory implements Port, Comparable<Port> {
 	}
 	
 	@Override
+	public boolean references(int index) {
+		return index == this.index;
+	}
+	
+	@Override
 	public int compareTo(Port port) {
 		int answer = 0;
 		if (port instanceof PortMemory) {
@@ -71,4 +75,10 @@ public class PortMemory implements Port, Comparable<Port> {
 	public String toString() {
 		return "MEM[" + this.index + "]";
 	}
+	
+	@Override
+	public boolean checkConsistency(int index) {
+		return (this.index < index);
+	}
+
 }

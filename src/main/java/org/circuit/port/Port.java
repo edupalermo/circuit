@@ -9,5 +9,9 @@ public interface Port extends Serializable {
 	void reset();
 	
 	void adustLeft(int index);
+	
+	boolean references(int index);
+	
+	boolean checkConsistency(int index);
 
 }

@@ -1,6 +1,5 @@
 package org.circuit.port;
 
-import java.util.List;
 import java.util.Random;
 
 public class PortAnd implements Port, Comparable<Port> {
@@ -37,6 +36,7 @@ public class PortAnd implements Port, Comparable<Port> {
 		}
 		
 		if (major > index) {
+			System.out.println("dec");
 			this.major--;
 		}
 	}
@@ -70,6 +70,20 @@ public class PortAnd implements Port, Comparable<Port> {
 		return answer;
 	}
 	
+	
+	
+	@Override
+	public boolean references(int index) {
+		return (index == this.minor) || (index == this.major);
+	}
+	
+	
+
+	@Override
+	public boolean checkConsistency(int index) {
+		return (this.minor < index) && (this.major < index);
+	}
+
 	public static PortAnd random(int size) {
 		Random random = new Random();
 		int l = random.nextInt(size);
