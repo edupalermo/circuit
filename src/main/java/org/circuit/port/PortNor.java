@@ -2,14 +2,14 @@ package org.circuit.port;
 
 import java.util.Random;
 
-public class PortAnd extends Port {
+public class PortNor extends Port {
 
 	private static final long serialVersionUID = 1L;
 	
 	private int minor;
 	private int major;
 	
-	public PortAnd(int left, int right) {
+	public PortNor(int left, int right) {
 		this.minor = Math.min(left, right);
 		this.major = Math.max(left, right);
 	}
@@ -21,8 +21,8 @@ public class PortAnd extends Port {
 	public boolean equals(Object obj) {
 		boolean equals = false;
 		
-		if (obj instanceof PortAnd) {
-			PortAnd portAnd = (PortAnd) obj;
+		if (obj instanceof PortNor) {
+			PortNor portAnd = (PortNor) obj;
 			equals = (this.minor == portAnd.getMinor()) && (this.major == portAnd.getMajor()); 
 		}
 		
@@ -50,14 +50,14 @@ public class PortAnd extends Port {
 	}
 	
 	public boolean evaluate(boolean list[]) {
-		return list[this.minor] && list[this.major];
+		return !(list[this.minor] || list[this.major]);
 	}
 
 	@Override
 	public int compareTo(Port port) {
 		int answer = 0;
-		if (port instanceof PortAnd) {
-			PortAnd portAnd = (PortAnd) port;
+		if (port instanceof PortNor) {
+			PortNor portAnd = (PortNor) port;
 			answer = this.minor - portAnd.getMinor();
 			if (answer == 0) {
 				answer = this.major - portAnd.getMajor();
@@ -83,23 +83,23 @@ public class PortAnd extends Port {
 		return (this.minor < index) && (this.major < index);
 	}
 
-	public static PortAnd random(int size) {
+	public static PortNor random(int size) {
 		Random random = new Random();
 		int l = random.nextInt(size);
 		int r = 0;
 		while ((r = random.nextInt(size)) == l);
-		return new PortAnd(l, r);
+		return new PortNor(l, r);
 	}
 
 	public String toString() {
 		return "AND[" + this.minor + "," + this.major + "]";
 	}
-
+	
 	@Override
 	public Object clone() {
-		return new PortAnd(this.minor, this.major);
+		return new PortNor(this.minor, this.major);
 	}
-    
+
 	@Override
 	public void adjust(int oldIndex, int newIndex) {
 		if (this.minor == oldIndex) {
@@ -112,6 +112,4 @@ public class PortAnd extends Port {
 			this.minor = Math.min(newIndex, this.minor);
 		}
 	}
-
-	
 }

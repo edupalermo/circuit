@@ -1,6 +1,6 @@
 package org.circuit.port;
 
-public class PortInput implements Port, Comparable<Port> {
+public class PortInput extends Port {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -65,6 +65,16 @@ public class PortInput implements Port, Comparable<Port> {
 	@Override
 	public boolean checkConsistency(int index) {
 		return true;
+	}
+
+	@Override
+	public Object clone() {
+		return new PortInput(this.index);
+	}
+	
+	@Override
+	public void adjust(int oldIndex, int newIndex) {
+		throw new RuntimeException("Inconsistency");
 	}
 
 }

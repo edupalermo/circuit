@@ -25,9 +25,11 @@ public class PersistedList<E> implements List<E> {
 
 	private RandomAccessFile randomAccessFile = null;
 
-	private static int GAP_LIMIT = 100000;
+	private static int GAP_LIMIT = 10000;
 	
 	private Set<Long> removedPhysicaIndices = new TreeSet<Long>();
+	
+	private transient Buffer buffer = new Buffer();
 
 	// Length And Value
 
@@ -83,7 +85,13 @@ public class PersistedList<E> implements List<E> {
 	
 	@Override
 	public E get(int index) {
-		return this.getByPhysicalIndex(this.getPhysicalIndex(index));
+		
+		E e = (E) this.buffer.get(index);
+		if (e == null) {
+			e = this.getByPhysicalIndex(this.getPhysicalIndex(index));
+			this.buffer.add(index, e);
+		}
+		return e;
 	}
 
 	@Override
@@ -114,6 +122,7 @@ public class PersistedList<E> implements List<E> {
 		}
 		
 		//checkConsistency();
+		this.buffer.remove(index);
 		
 		return e;
 	}

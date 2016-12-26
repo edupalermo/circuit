@@ -1,17 +1,47 @@
 package org.circuit.port;
 
 import java.io.Serializable;
+import java.util.concurrent.ThreadLocalRandom;
 
-public interface Port extends Serializable {
+public abstract class Port implements Serializable, Comparable<Port>, Cloneable {
 
-	boolean evaluate(boolean list[]);
+	private static final long serialVersionUID = 1L;
+
+	public abstract boolean evaluate(boolean list[]);
+
+	public abstract void reset();
+
+	public abstract void adustLeft(int index);
+
+	public abstract boolean references(int index);
+
+	public abstract boolean checkConsistency(int index);
+
+	public abstract int compareTo(Port port);
 	
-	void reset();
+	public abstract void adjust(int oldIndex, int newIndex);
 	
-	void adustLeft(int index);
-	
-	boolean references(int index);
-	
-	boolean checkConsistency(int index);
+	@Override
+	public abstract Object clone();
+
+	public static Port random(int size) {
+		ThreadLocalRandom random = ThreadLocalRandom.current();
+		switch (random.nextInt(6)) {
+		case 0:
+			return PortAnd.random(size);
+		case 1:
+			return PortOr.random(size);
+		case 2:
+			return PortNand.random(size);
+		case 3:
+			return PortNor.random(size);
+		case 4:
+			return PortNot.random(size);
+		case 5:
+			return PortMemory.random(size);
+		default:
+			throw new RuntimeException("Inconsistency");
+		}
+	}
 
 }

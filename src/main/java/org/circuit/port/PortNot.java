@@ -2,7 +2,7 @@ package org.circuit.port;
 
 import java.util.Random;
 
-public class PortNot implements Port, Comparable<Port> {
+public class PortNot extends Port {
 
 	private static final long serialVersionUID = 1L;
 	
@@ -75,4 +75,18 @@ public class PortNot implements Port, Comparable<Port> {
 		return (this.index < index);
 	}
 
+	@Override
+	public Object clone() {
+		return new PortNot(this.index);
+	}
+	
+	@Override
+	public void adjust(int oldIndex, int newIndex) {
+		if (this.index == oldIndex) {
+			this.index = newIndex;
+		}
+	}
+
 }
+
+
