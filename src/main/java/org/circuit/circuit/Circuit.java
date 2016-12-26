@@ -5,24 +5,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.circuit.Application;
 import org.circuit.port.Port;
 import org.circuit.port.PortInput;
-import org.circuit.solution.Solution;
 import org.circuit.solution.TimeSlice;
-import org.circuit.util.ArrayUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class Circuit extends ArrayList<Port> implements Cloneable {
 
 	private static final long serialVersionUID = 1L;
 
-	private transient static final Logger logger = LoggerFactory.getLogger(Application.class);
-	
 	private boolean checkConsistency = true;
 	
-	private transient TreeMap<String, Integer> grades = new TreeMap<String, Integer>();
+	private TreeMap<String, Integer> grades = new TreeMap<String, Integer>();
 	
 	public static final String GRADE_HIT = "GRADE_HIT";
 	public static final String GRADE_CIRCUIT_SIZE = "GRADE_CIRCUIT_SIZE";
@@ -94,15 +87,17 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 	public String toSmallString() {
 		StringBuffer sb = new StringBuffer();
 		
-		for (Map.Entry<String, Integer> entry : this.grades.entrySet()) {
-			sb.append("[");
-			sb.append(entry.getKey());
-			sb.append("=");
-			sb.append(entry.getValue().toString());
-			sb.append("] ");
+		if (this.grades != null) {
+			for (Map.Entry<String, Integer> entry : this.grades.entrySet()) {
+				sb.append("[");
+				sb.append(entry.getKey());
+				sb.append("=");
+				sb.append(entry.getValue().toString());
+				sb.append("] ");
+			}
+			
+			sb.deleteCharAt(sb.length() - 1);
 		}
-		
-		sb.deleteCharAt(sb.length() - 1);
 		
 		return sb.toString();
 	}

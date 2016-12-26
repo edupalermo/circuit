@@ -4,20 +4,26 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.concurrent.ThreadLocalRandom;
 
+import org.circuit.ClientApplication;
+import org.circuit.evaluator.EvaluateHits;
 import org.circuit.port.Port;
 import org.circuit.port.PortInput;
+import org.circuit.util.CircuitUtils;
 
 public class CircuitScramble {
 	
 	
 	public static Circuit scramble(Circuit c1, Circuit c2) {
-		Circuit answer = scrambleCloned((Circuit) c1.clone(), (Circuit) c2.clone()); 
+		Circuit answer = realScramble(c1, c2); 
+		
+		CircuitUtils.useLowerPortsWithSameOutput(answer, ClientApplication.solutions);
+		CircuitUtils.simplify(answer, EvaluateHits.generateOutput(answer, ClientApplication.solutions));
 		
 		return answer;
 	}
 	
 	
-	private static Circuit scrambleCloned(Circuit c1, Circuit c2) {
+	private static Circuit realScramble(Circuit c1, Circuit c2) {
 		
 		ThreadLocalRandom random = ThreadLocalRandom.current();
 		

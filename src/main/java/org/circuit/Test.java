@@ -9,9 +9,9 @@ public class Test {
 	
 	public static void main(String args[]) {
 		
-		Circuit circuit = IoUtils.readObject(Application.FILE_BETTER, Circuit.class);
+		Circuit circuit = IoUtils.readObject(ClientApplication.FILE_BETTER, Circuit.class);
 		
-		int[] output = EvaluateHits.generateOutput(circuit, Application.solutions);
+		int[] output = EvaluateHits.generateOutput(circuit, ClientApplication.solutions);
 		
 		
 		for (char c = 'a'; c <= 'z'; c++) {

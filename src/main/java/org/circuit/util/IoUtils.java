@@ -2,6 +2,8 @@ package org.circuit.util;
 
 import java.io.*;
 
+import org.springframework.util.Base64Utils;
+
 public class IoUtils {
 
 	private static byte BYTE_ZERO = 0x00;
@@ -70,6 +72,10 @@ public class IoUtils {
 		return answer;
 	}
 
+	public static Object bytesToObject(byte array[]) {
+		return bytesToObject(array, 0 , array.length);
+	}
+
 	public static void closeQuitely(InputStream is) {
 		if (is != null) {
 			try {
@@ -99,6 +105,14 @@ public class IoUtils {
 			throw new RuntimeException(e);
 		}
 
+	}
+	
+	public static String objectToBase64(Object o) {
+		return Base64Utils.encodeToUrlSafeString(objectToBytes(o));
+	}
+
+	public static Object base64ToObject(String base64String) {
+		return bytesToObject(Base64Utils.decodeFromUrlSafeString(base64String));
 	}
 
 }
