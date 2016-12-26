@@ -1,5 +1,6 @@
 package org.circuit.port;
 
+import java.util.Map;
 import java.util.Random;
 
 public class PortMemory extends Port {
@@ -92,4 +93,10 @@ public class PortMemory extends Port {
 			this.index = newIndex;
 		}
 	}
+
+	@Override
+	public void translate(Map<Integer, Integer> map) {
+		this.index = map.get(this.index).intValue();
+	}
+
 }

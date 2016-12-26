@@ -75,6 +75,26 @@ public class CircuitUtils {
 		same.clear();
 	}
 	
+	
+	public static void useLowerPortsWithSameOutput(Circuit circuit, Solutions solutions) {
+		Map<Integer, List<Integer>> same = new TreeMap<Integer, List<Integer>>(Collections.reverseOrder());
+
+		for (Solution solution : solutions) {
+			evaluateRepetition(circuit, same, solution);
+		}
+
+		for (int i = solutions.getInputSize(); i < circuit.size(); i++) {
+			for (Map.Entry<Integer, List<Integer>> entry : same.entrySet()) {
+				if ((entry.getValue() != null) && (entry.getValue().size() > 0)) {
+					if (circuit.get(i).references(entry.getKey().intValue())) {
+						circuit.get(i).adjust(entry.getKey().intValue(), entry.getValue().get(0).intValue());
+					}
+				}
+			}
+		}
+	}
+	
+	
 	// Remove ports not used by Output
 	public static void simplify(Circuit circuit, int output[]) {
 

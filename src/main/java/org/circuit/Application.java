@@ -1,20 +1,20 @@
 package org.circuit;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.apache.commons.pool2.ObjectPool;
-import org.apache.commons.pool2.impl.GenericObjectPool;
 import org.circuit.circuit.Circuit;
 import org.circuit.comparator.CircuitComparator;
 import org.circuit.evaluator.EvaluateHits;
 import org.circuit.generator.RandomGenerator;
+import org.circuit.random.RandomWeight;
 import org.circuit.solution.Solutions;
 import org.circuit.solution.StringSolution;
 import org.circuit.util.CircuitUtils;
-import org.magicwerk.brownies.collections.primitive.IntGapList;
+import org.circuit.util.IoUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,30 +33,46 @@ public class Application {
 	private static final boolean validateConsistency = false;
 
 	private static final Logger logger = LoggerFactory.getLogger(Application.class);
-
-	public static ObjectPool<IntGapList> intGapListPool = new GenericObjectPool<IntGapList>(new IntGapListFactory());
+	
+	public static final File FILE_BETTER = new File("./better.obj");
 	
 	private static final CircuitComparator circuitComparator = new CircuitComparator();
-
+	
+	public static Solutions solutions = new Solutions();
+	
 	static {
-		((GenericObjectPool) intGapListPool).setMaxTotal(-1);
-	}
-
-	public static void main(String[] args) {
-
-		Solutions solutions = new Solutions();
-
 		solutions.add(new StringSolution("a", "vogal"));
 		solutions.add(new StringSolution("b", "consoante"));
 		solutions.add(new StringSolution("c", "consoante"));
 		solutions.add(new StringSolution("d", "consoante"));
 		solutions.add(new StringSolution("e", "vogal"));
 		
+		solutions.add(new StringSolution("h", "consoante"));
+		
+		solutions.add(new StringSolution("H", "consoante"));
+		
+		solutions.add(new StringSolution("0", "número"));
+		
+	}
+	
+
+	public static void main(String[] args) {
+		
 		List<Circuit> population = generateInitialRandomPopulation(solutions);
-		Collections.sort(population, circuitComparator);
+		
+		if (FILE_BETTER.exists()) {
+			Circuit newCircuit = IoUtils.readObject(FILE_BETTER, Circuit.class);
+			evaluateCircuit(newCircuit, solutions);
+			orderedAdd(population, newCircuit);
+		}
+		
 		dumpPopulation(population, solutions);
 		
 		Circuit lastFirst = population.get(0);
+		
+		RandomWeight<Method> methodChosser = new RandomWeight<Method>();
+		methodChosser.add(10, Method.METHOD_RANDOM_ENRICH);
+		methodChosser.add(1, Method.METHOD_RANDOM_CIRCUIT);
 		
 		for (;;) {
 			
@@ -69,11 +85,11 @@ public class Application {
 			do {
 
 				Circuit newCircuit = null;
-				switch(random.nextInt(2)) {
-				case 0 :
+				switch(methodChosser.next()) {
+				case METHOD_RANDOM_CIRCUIT :
 					newCircuit = RandomGenerator.randomGenerate(solutions.getInputSize(), population.get(0).size());
 					break;
-				case 1 :
+				case METHOD_RANDOM_ENRICH :
 					newCircuit = (Circuit) population.get(random.nextInt(population.size())).clone();
 					RandomGenerator.randomEnrich(newCircuit, 1 + (newCircuit.size() / 10));
 					break;
@@ -85,9 +101,9 @@ public class Application {
 					newCircuit = population.get(random.nextInt(population.size()));
 					CircuitUtils.simplify(newCircuit, solutions);
 					break;
+*/				
 					default:
 						throw new RuntimeException("Inconsistency");
-*/				
 				}
 				
 				evaluateCircuit(newCircuit, solutions);
@@ -99,8 +115,11 @@ public class Application {
 				
 				Circuit newCircuit = (Circuit) population.get(0).clone();
 				CircuitUtils.simplify(newCircuit, EvaluateHits.generateOutput(newCircuit, solutions));
-				evaluateCircuit(newCircuit, solutions);
 				
+				IoUtils.writeObject(FILE_BETTER, newCircuit);
+				
+				
+				evaluateCircuit(newCircuit, solutions);
 				orderedAdd(population, newCircuit);
 
 				lastFirst = population.get(0);
@@ -111,7 +130,7 @@ public class Application {
 		}
 	}
 	
-	private static void evaluateCircuit(Circuit circuit, Solutions solutions) {
+	public static void evaluateCircuit(Circuit circuit, Solutions solutions) {
 		circuit.setGrade(Circuit.GRADE_HIT, EvaluateHits.evaluate(circuit, solutions));
 		circuit.setGrade(Circuit.GRADE_CIRCUIT_SIZE, circuit.size());
 	}
@@ -147,16 +166,15 @@ public class Application {
 
 	public static void dumpPopulation(List<Circuit> population, Solutions solutions) {
 		for (int i = 0; i < 30; i++) {
-			logger.info(String.format("[%2d] %s", i + 1, population.get(i).toSmallString()));
+			logger.info(String.format("[%5d] %s", i + 1, population.get(i).toSmallString()));
+		}
+		
+		int limit = Math.min(POPULATION_SIZE, population.size());
+		for (int i =  limit - 3; i < limit; i++) {
+			logger.info(String.format("[%5d] %s", i + 1, population.get(i).toSmallString()));
 		}
 		logger.info(String.format("Population [%d] Total Hits [%d]", population.size(), (solutions.getOutputSize() * CircuitUtils.getNumberOfSteps(solutions))));
 
-	}
-
-
-	private static String getPercent(long initial) {
-		double percent = 100d * (double) (System.currentTimeMillis() - initial) / (double) SAVE_DELAY;
-		return String.format("%3.3f%%", percent);
 	}
 
 	public static String booleanListToString(List<Boolean> list) {

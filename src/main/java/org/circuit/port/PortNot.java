@@ -1,5 +1,6 @@
 package org.circuit.port;
 
+import java.util.Map;
 import java.util.Random;
 
 public class PortNot extends Port {
@@ -85,6 +86,11 @@ public class PortNot extends Port {
 		if (this.index == oldIndex) {
 			this.index = newIndex;
 		}
+	}
+
+	@Override
+	public void translate(Map<Integer, Integer> map) {
+		this.index = map.get(this.index).intValue();
 	}
 
 }

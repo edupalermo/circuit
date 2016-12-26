@@ -1,5 +1,6 @@
 package org.circuit.port;
 
+import java.util.Map;
 import java.util.Random;
 
 public class PortNor extends Port {
@@ -112,4 +113,15 @@ public class PortNor extends Port {
 			this.minor = Math.min(newIndex, this.minor);
 		}
 	}
+	
+	@Override
+	public void translate(Map<Integer, Integer> map) {
+		
+		int newMajor = map.get(this.major).intValue();
+		int newMinor = map.get(this.minor).intValue();
+		
+		this.minor = Math.min(newMinor, newMajor);
+		this.major = Math.max(newMinor, newMajor);
+	}
+	
 }

@@ -1,6 +1,7 @@
 package org.circuit.port;
 
 import java.io.Serializable;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
 public abstract class Port implements Serializable, Comparable<Port>, Cloneable {
@@ -20,6 +21,8 @@ public abstract class Port implements Serializable, Comparable<Port>, Cloneable 
 	public abstract int compareTo(Port port);
 	
 	public abstract void adjust(int oldIndex, int newIndex);
+	
+	public abstract void translate(Map<Integer, Integer> map);
 	
 	@Override
 	public abstract Object clone();

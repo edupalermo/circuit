@@ -1,5 +1,7 @@
 package org.circuit.port;
 
+import java.util.Map;
+
 public class PortInput extends Port {
 
 	private static final long serialVersionUID = 1L;
@@ -74,6 +76,11 @@ public class PortInput extends Port {
 	
 	@Override
 	public void adjust(int oldIndex, int newIndex) {
+		throw new RuntimeException("Inconsistency");
+	}
+	
+	@Override
+	public void translate(Map<Integer, Integer> map) {
 		throw new RuntimeException("Inconsistency");
 	}
 

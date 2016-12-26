@@ -1,13 +1,18 @@
 package org.circuit.solution;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.circuit.Clock;
+import org.circuit.circuit.Circuit;
 
 public class StringSolution extends Solution {
 	
 	private final static byte BYTE_ZERO = 0x00;
+	
+	private final static int BIT_ANSWER = 8;
 	
 	public StringSolution(String input, String output) {
 		super(stringsToTimeSliceList(input, output));
@@ -48,7 +53,9 @@ public class StringSolution extends Solution {
 
 		List<Boolean> listInput = byteToList(BYTE_ZERO);
 		listInput.add(clock.thick());
-		listInput.add(false);
+		listInput.add(true); // Always true
+		listInput.add(false);  // Always false
+		listInput.add(false);  // Hearing
 
 		List<Boolean> listOutput = byteToList(BYTE_ZERO);
 		listOutput.add(false);
@@ -68,8 +75,104 @@ public class StringSolution extends Solution {
 		return list;
 	}
 	
+	private static byte listToByte(boolean state[], int output[], int offset, int size) {
+		int answer = 0;
+		
+		for (int i = offset; i < offset + size; i++) {
+			if (state[output[i]]) {
+				answer = answer + (int) Math.pow(2, (offset + size) - i - 1);
+			}
+		}
+		return (byte) answer;
+	}
+	
 	private static boolean getBit(byte b, int i) {
 		return (0x01 & (b >> (7 - i))) == 1;
 	}
+	
+	public static String evaluate(Circuit circuit, int[] output, String input) {
+		StringBuffer sb = new StringBuffer();
+		
+		Clock clock = new Clock();
+		
+		boolean state[] = new boolean[circuit.size()];
+		circuit.reset();
+		
+		
+		for (byte b : input.getBytes()) {
+			List<Boolean> listInput = byteToList(b);
+			listInput.add(clock.thick());
+			listInput.add(true); // Always true
+			listInput.add(false);  // Always false
+			listInput.add(true); // Speaking
+			
+			
+			circuit.assignInputToState(state, listInput);
+			circuit.propagate(state);
+			
+			if (state[output[BIT_ANSWER]]) {
+				throw new RuntimeException("Inconsistency"); 
+			}
+		}
+		
+		String answer = null;
+		ByteArrayOutputStream baos = null;
+		int count = 0;
+		
+		try {
+			baos = new ByteArrayOutputStream();
+			do {
+				List<Boolean> listInput = byteToList(BYTE_ZERO);
+				listInput.add(clock.thick());
+				listInput.add(true); // Always true
+				listInput.add(false);  // Always false
+				listInput.add(false);  // Hearing
 
+				circuit.assignInputToState(state, listInput);
+				circuit.propagate(state);
+				
+				count++;
+				
+				if (count > 100) {
+					state[output[BIT_ANSWER]] = false;
+					// throw new RuntimeException("Inconsistency");
+				}
+				
+				if (state[output[BIT_ANSWER]]) {
+					baos.write(listToByte(state, output, 0, 8));
+				}
+			} while (state[output[BIT_ANSWER]]);
+
+			answer = new String (baos.toByteArray());
+		}			
+		finally {
+			if (baos != null) {
+				try {
+					baos.close();
+				} catch (IOException e) {
+					throw new RuntimeException(e);
+				}
+			}
+		}
+		
+		return new String(answer);
+	}
+
+	
+	public static void main(String args[]) {
+		
+		List<Boolean> listInput = byteToList((byte) 55);
+		
+		boolean state[] = new boolean[listInput.size()];
+		
+		for (int i =0; i < listInput.size(); i++) {
+			System.out.println(String.format("%d %s", i, listInput.get(i).toString()));
+			state[i] = listInput.get(i).booleanValue();
+		}
+		
+		System.out.println(listToByte(state, new int[] {0, 1,2,3,4,5,6,7}, 0, 8));
+		
+		
+	}
+	
 }

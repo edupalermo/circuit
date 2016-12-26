@@ -20,9 +20,9 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 
 	private transient static final Logger logger = LoggerFactory.getLogger(Application.class);
 	
-	private boolean validateConsistency = false;
+	private boolean checkConsistency = true;
 	
-	private TreeMap<String, Integer> grades = new TreeMap<String, Integer>();
+	private transient TreeMap<String, Integer> grades = new TreeMap<String, Integer>();
 	
 	public static final String GRADE_HIT = "GRADE_HIT";
 	public static final String GRADE_CIRCUIT_SIZE = "GRADE_CIRCUIT_SIZE";
@@ -43,10 +43,16 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 
 	
 	public void setGrade(String name, Integer grade) {
+		if (this.grades == null) {
+			this.grades = new TreeMap<String, Integer>();
+		}
 		this.grades.put(name, grade);
 	}
 
 	public Integer getGrade(String name) {
+		if (this.grades == null) {
+			this.grades = new TreeMap<String, Integer>();
+		}
 		return this.grades.get(name);
 	}
 
@@ -108,12 +114,15 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 	}
 
 	public void removePort(int index) {
-		//logger.info(String.format("Checking [%d] size [%d]", index, size()));
-		for (int i = size()-1; i >= index + 1; i--) {
-			//logger.info(String.format("Checking [%d] %s", index, get(i).toString()));
-			if (get(i).references(index)) {
-				//logger.info(String.format("Recurring on [%d]", i));
-				throw new RuntimeException("Inconsistency");
+		
+		if (checkConsistency) {
+			//logger.info(String.format("Checking [%d] size [%d]", index, size()));
+			for (int i = size()-1; i >= index + 1; i--) {
+				//logger.info(String.format("Checking [%d] %s", index, get(i).toString()));
+				if (get(i).references(index)) {
+					//logger.info(String.format("Recurring on [%d]", i));
+					throw new RuntimeException("Inconsistency");
+				}
 			}
 		}
 		
@@ -122,59 +131,6 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 		}
 		//logger.info("Removing port: " + this.get(index).toString());
 		this.remove(index);
-	}
-	
-	public void evaluate(List<Solution> solutions, int outputSize) {
-		
-		int score[][] = new int [this.size()][outputSize];
-		
-		for (Solution solution: solutions) {
-			evaluate(solution, score);
-		}
-		
-		for (int i = 0; i < score.length; i++) {
-			System.out.println(String.format("%d - %s", i , ArrayUtils.toString(score[i])));
-		}
-		
-		System.out.println("Score: " + dumpScore(score));
-		
-	}
-	
-	public String dumpScore(int score[][]) {
-		StringBuffer sb = new StringBuffer();
-		for (int i = 0; i < score[0].length ; i++) {
-			int better = 0;
-			int betterScore = score[0][i];
-			for (int j = 0; j < score.length ; j++) {
-				if (score[j][i] > score[better][i]) {
-					better = j;
-				}
-			}
-			sb.append(String.format("[%d %d %d] ", i, better, score[better][i]));
-		}
-		
-		return sb.toString();
-	}
-
-	public void evaluate(Solution solution, int[][] score) {
-		boolean state[] = new boolean[this.size()];
-		this.reset();
-
-		for (TimeSlice timeSlice : solution.getDialogue()) {
-			assignInputToState(state, timeSlice.getInput());
-			propagate(state);
-			
-			for (int i = 0; i < score.length; i++) {
-				for (int j = 0; j < timeSlice.getOutput().size(); j++) {
-					if (state[i] == timeSlice.getOutput().get(j).booleanValue()) {
-						score[i][j]++;
-					}
-				}				
-			}
-			
-
-		}
-
 	}
 
 	@Override
@@ -186,8 +142,5 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 		
 		return circuit;
 	}
-	
-
-	
 	
 }
