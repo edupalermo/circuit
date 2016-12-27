@@ -31,7 +31,7 @@ public class Client {
 		springApplication.run(args);
 
 		RandomWeight<Method> methodChosser = new RandomWeight<Method>();
-		methodChosser.add(5000, Method.METHOD_RANDOM_ENRICH);
+		methodChosser.add(10000, Method.METHOD_RANDOM_ENRICH);
 		methodChosser.add(10, Method.METHOD_CIRCUITS_SCRABLE);
 		methodChosser.add(1, Method.METHOD_RANDOM_CIRCUIT);
 
@@ -51,11 +51,11 @@ public class Client {
 				Method method = methodChosser.next();
 				switch (method) {
 				case METHOD_RANDOM_CIRCUIT:
-					newCircuit = RandomGenerator.randomGenerate(solutions.getInputSize(), random.nextInt(1, 1000));
+					newCircuit = RandomGenerator.randomGenerate(solutions.getInputSize(), random.nextInt(1, 250));
 					break;
 				case METHOD_RANDOM_ENRICH:
 					newCircuit = (Circuit) getCircuit();
-					RandomGenerator.randomEnrich(newCircuit, 1 + random.nextInt(newCircuit.size() / 2));
+					RandomGenerator.randomEnrich(newCircuit, 1 + random.nextInt(newCircuit.size() / 10));
 					break;
 				case METHOD_CIRCUITS_SCRABLE:
 					Circuit c1 = getCircuit();

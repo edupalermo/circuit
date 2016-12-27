@@ -183,7 +183,7 @@ public class ClientApplication {
 
 	}
 	
-	public static int getLargest(List<Circuit> population) {
+	private static int getLargest(List<Circuit> population) {
 		int size = 0;
 		
 		for (Circuit c : population) {

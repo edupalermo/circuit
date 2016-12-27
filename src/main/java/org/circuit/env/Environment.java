@@ -70,7 +70,7 @@ public class Environment {
 			}
 		}
 		
-		logger.info(String.format("Population [%d] Total Hits [%d] Largest Circuit [%d]", population.size(), (solutions.getOutputSize() * CircuitUtils.getNumberOfSteps(solutions)), ClientApplication.getLargest(population)));
+		logger.info(String.format("Population [%d] Total Hits [%d] Largest Circuit [%d]", population.size(), (solutions.getOutputSize() * CircuitUtils.getNumberOfSteps(solutions)), getLargest()));
 		
 	}
 	
@@ -120,6 +120,15 @@ public class Environment {
 		}
 	}
 
+	public int getLargest() {
+		int size = 0;
+		synchronized (population) {
+			for (Circuit c : population) {
+				size = Math.max(c.size(), size);
+			}
+		}
+		return size;
+	}
 
 
 }
