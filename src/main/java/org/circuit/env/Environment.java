@@ -1,6 +1,7 @@
 package org.circuit.env;
 
 import java.io.File;
+import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -66,8 +67,9 @@ public class Environment {
 				logger.info(String.format("[%5d] %s", i + 1, population.get(i).toSmallString()));
 			}
 		}
-		
-		logger.info(String.format("Population [%d] Total Hits [%d] Largest Circuit [%d]", population.size(), (Solutions.getInstance().getOutputSize() * CircuitUtils.getNumberOfSteps(Solutions.getInstance())), getLargest()));
+
+		DecimalFormat myFormatter = new DecimalFormat("###,###");
+		logger.info(String.format("Population [%d] Total Hits [%d] Weight [%s] Largest Circuit [%d] ", population.size(), (Solutions.getInstance().getOutputSize() * CircuitUtils.getNumberOfSteps(Solutions.getInstance())), myFormatter.format(getWeight()), getLargest()));
 		
 	}
 	
@@ -124,11 +126,21 @@ public class Environment {
 		}
 	}
 
-	public int getLargest() {
+	private int getLargest() {
 		int size = 0;
 		synchronized (population) {
 			for (Circuit c : population) {
 				size = Math.max(c.size(), size);
+			}
+		}
+		return size;
+	}
+
+	private int getWeight() {
+		int size = 0;
+		synchronized (population) {
+			for (Circuit c : population) {
+				size += c.size();
 			}
 		}
 		return size;
