@@ -58,6 +58,7 @@ public class Environment {
 	}
 	
 	public void dump() {
+		logger.info("====================================================================");
 		for (int i = 0; i < Math.min(30, population.size()); i++) {
 			logger.info(String.format("[%5d] %s", i + 1, population.get(i).toSmallString()));
 		}

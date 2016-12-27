@@ -1,5 +1,7 @@
 package org.circuit;
 
+import java.io.File;
+
 import org.circuit.circuit.Circuit;
 import org.circuit.evaluator.EvaluateHits;
 import org.circuit.solution.StringSolution;
@@ -9,7 +11,7 @@ public class Test {
 	
 	public static void main(String args[]) {
 		
-		Circuit circuit = IoUtils.readObject(ClientApplication.FILE_BETTER, Circuit.class);
+		Circuit circuit = IoUtils.readObject(new File("C:\\temp\\circuit\\better.obj"), Circuit.class);
 		
 		int[] output = EvaluateHits.generateOutput(circuit, ClientApplication.solutions);
 		
