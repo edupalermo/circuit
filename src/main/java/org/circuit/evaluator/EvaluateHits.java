@@ -7,26 +7,26 @@ import org.circuit.solution.TimeSlice;
 
 public class EvaluateHits {
 	
-	public static int evaluate(Circuit circuit, Solutions solutions) {
+	public static int evaluate(Circuit circuit) {
 		
-		int score[][] = new int [circuit.size()][solutions.getOutputSize()];
+		int score[][] = new int [circuit.size()][Solutions.getInstance().getOutputSize()];
 		
-		for (Solution solution: solutions) {
+		for (Solution solution: Solutions.getInstance()) {
 			evaluate(circuit, solution, score);
 		}
 		
 		return sumBetterHits(score);
 	}
 	
-	public static int[] generateOutput(Circuit circuit, Solutions solutions) {
+	public static int[] generateOutput(Circuit circuit) {
 		
-		int score[][] = new int [circuit.size()][solutions.getOutputSize()];
+		int score[][] = new int [circuit.size()][Solutions.getInstance().getOutputSize()];
 		
-		for (Solution solution: solutions) {
+		for (Solution solution: Solutions.getInstance()) {
 			evaluate(circuit, solution, score);
 		}
 		
-		return generateOutput(score, solutions.getOutputSize());
+		return generateOutput(score, Solutions.getInstance().getOutputSize());
 	}
 	
 	

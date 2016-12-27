@@ -8,15 +8,14 @@ import java.util.concurrent.ThreadLocalRandom;
 
 import javax.annotation.PostConstruct;
 
-import org.circuit.ClientApplication;
 import org.circuit.circuit.Circuit;
 import org.circuit.comparator.CircuitComparator;
 import org.circuit.evaluator.EvaluateHits;
 import org.circuit.generator.RandomGenerator;
 import org.circuit.solution.Solutions;
-import org.circuit.solution.StringSolution;
 import org.circuit.util.CircuitUtils;
 import org.circuit.util.IoUtils;
+import org.circuit.util.RandomUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,8 +35,6 @@ public class Environment {
 	
 	private static final CircuitComparator circuitComparator = new CircuitComparator();
 	
-	public Solutions solutions = new Solutions();
-	
 	@PostConstruct
 	public void postConstruct() {
 		File file = new File(folderName, "better.obj");
@@ -49,10 +46,10 @@ public class Environment {
 		}
 		else {
 			logger.info(String.format("File not found [%s] generating random circuit", file.getAbsolutePath()));
-			circuit = RandomGenerator.randomGenerate(solutions.getInputSize(), 500);
+			circuit = RandomGenerator.randomGenerate(500);
 		}
-		
-		ClientApplication.evaluateCircuit(circuit, solutions);
+
+		CircuitUtils.evaluateCircuit(circuit);
 		this.orderedAdd(circuit);
 		
 	}
@@ -70,13 +67,12 @@ public class Environment {
 			}
 		}
 		
-		logger.info(String.format("Population [%d] Total Hits [%d] Largest Circuit [%d]", population.size(), (solutions.getOutputSize() * CircuitUtils.getNumberOfSteps(solutions)), getLargest()));
+		logger.info(String.format("Population [%d] Total Hits [%d] Largest Circuit [%d]", population.size(), (Solutions.getInstance().getOutputSize() * CircuitUtils.getNumberOfSteps(Solutions.getInstance())), getLargest()));
 		
 	}
 	
 	public String randomPick() {
-		ThreadLocalRandom random = ThreadLocalRandom.current();
-		return IoUtils.objectToBase64(this.population.get(random.nextInt(this.population.size())));
+		return IoUtils.objectToBase64(this.population.get(RandomUtils.raffle(this.population.size())));
 	}
 	
 	public void insert(String base64Circuit) {
@@ -85,14 +81,22 @@ public class Environment {
 		
 		if (pos == 0) {
 			Circuit bestCircuit = (Circuit) circuit.clone();
+
+
+			if (circuit.size() > 6000) {
+				CircuitUtils.simplifyByRemovingUnsedPorts(bestCircuit);
+			}
+			else {
+				CircuitUtils.betterSimplify(bestCircuit);
+			}
 			
-			CircuitUtils.useLowerPortsWithSameOutput(bestCircuit, ClientApplication.solutions);
-			CircuitUtils.simplify(bestCircuit, EvaluateHits.generateOutput(bestCircuit, ClientApplication.solutions));
+			CircuitUtils.useLowerPortsWithSameOutput(bestCircuit);
+			CircuitUtils.simplify(bestCircuit);
 			
 			File file = new File(folderName, "better.obj");
 			IoUtils.writeObject(file, bestCircuit);
 			
-			ClientApplication.evaluateCircuit(bestCircuit, solutions);
+			CircuitUtils.evaluateCircuit(bestCircuit);
 			this.orderedAdd(bestCircuit);
 		}
 	}

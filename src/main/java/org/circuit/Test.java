@@ -10,10 +10,11 @@ import org.circuit.util.IoUtils;
 public class Test {
 	
 	public static void main(String args[]) {
-		
-		Circuit circuit = IoUtils.readObject(new File("C:\\temp\\circuit\\better.obj"), Circuit.class);
-		
-		int[] output = EvaluateHits.generateOutput(circuit, ClientApplication.solutions);
+
+		//Circuit circuit = IoUtils.readObject(new File("C:\\temp\\circuit\\better.obj"), Circuit.class);
+		Circuit circuit = IoUtils.readObject(new File("/tmp/better.obj"), Circuit.class);
+
+		int[] output = EvaluateHits.generateOutput(circuit);
 		
 		
 		for (char c = 'a'; c <= 'z'; c++) {

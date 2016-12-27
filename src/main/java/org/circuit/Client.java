@@ -1,11 +1,13 @@
 package org.circuit;
 
+import java.io.File;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.circuit.circuit.Circuit;
 import org.circuit.circuit.CircuitScramble;
 import org.circuit.evaluator.EvaluateHits;
 import org.circuit.generator.RandomGenerator;
+import org.circuit.port.Port;
 import org.circuit.random.RandomWeight;
 import org.circuit.solution.Solutions;
 import org.circuit.util.CircuitUtils;
@@ -35,8 +37,6 @@ public class Client {
 		methodChosser.add(10, Method.METHOD_CIRCUITS_SCRABLE);
 		methodChosser.add(1, Method.METHOD_RANDOM_CIRCUIT);
 
-		Solutions solutions = new Solutions();
-
 		for (;;) {
 
 
@@ -51,7 +51,7 @@ public class Client {
 				Method method = methodChosser.next();
 				switch (method) {
 				case METHOD_RANDOM_CIRCUIT:
-					newCircuit = RandomGenerator.randomGenerate(solutions.getInputSize(), random.nextInt(1, 250));
+					newCircuit = RandomGenerator.randomGenerate(random.nextInt(1, 250));
 					break;
 				case METHOD_RANDOM_ENRICH:
 					newCircuit = (Circuit) getCircuit();
@@ -62,29 +62,36 @@ public class Client {
 					Circuit c2 = getCircuit();
 					
 					logger.info(String.format("Method SCRAMBLE %d %d", c1.size(), c2.size()));
-					if (c1.size() + c2.size() < 1500) {
-						if (c1.size() + c2.size() > 500) {
-							CircuitUtils.useLowerPortsWithSameOutput(c1, ClientApplication.solutions);
-							CircuitUtils.simplify(c1, EvaluateHits.generateOutput(c1, ClientApplication.solutions));
-							
-							CircuitUtils.useLowerPortsWithSameOutput(c2, ClientApplication.solutions);
-							CircuitUtils.simplify(c2, EvaluateHits.generateOutput(c2, ClientApplication.solutions));
-						}
-						
-						newCircuit = CircuitScramble.scramble(getCircuit(), getCircuit());
-						
+					if (c1.size() + c2.size() > 1500) {
+						CircuitUtils.simplifyByRemovingUnsedPorts(c1);
+
+						CircuitUtils.simplifyByRemovingUnsedPorts(c2);
 					}
-					else {
-						logger.info(String.format("Skiping scramble. %d", c1.size() + c2.size()));
-						continue;
-					}
-					
+
+					newCircuit = CircuitScramble.scramble(c1, c2);
+						
+
 					break;
 				default:
 					throw new RuntimeException("Inconsistency");
 				}
 
-				ClientApplication.evaluateCircuit(newCircuit, solutions);
+				if (Consistency.check()) {
+					for (int i = 0; i < newCircuit.size(); i ++) {
+						Port port = newCircuit.get(i);
+						port.checkConsistency(i);
+					}
+				}
+
+				try {
+					CircuitUtils.evaluateCircuit(newCircuit);
+				}
+				catch (Throwable t) {
+					System.out.println("Method Name: " + method.name());
+					t.printStackTrace();
+					IoUtils.writeObject(new File("/tmp/error.obj"), newCircuit);
+					System.exit(1);
+				}
 				putCircuit(newCircuit);
 				
 				newCircuit.clear();

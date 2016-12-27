@@ -50,8 +50,8 @@ public class PortNor extends Port {
 		return major;
 	}
 	
-	public boolean evaluate(boolean list[]) {
-		return !(list[this.minor] || list[this.major]);
+	public boolean evaluate(boolean state[]) {
+		return !(state[this.minor] || state[this.major]);
 	}
 
 	@Override

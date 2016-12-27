@@ -10,6 +10,7 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 
 import org.circuit.circuit.Circuit;
+import org.circuit.evaluator.EvaluateHits;
 import org.circuit.port.Port;
 import org.circuit.port.PortAnd;
 import org.circuit.port.PortInput;
@@ -27,11 +28,11 @@ public class CircuitUtils {
 	// private static final Logger logger = LoggerFactory.getLogger(CircuitUtils.class);
 
 	// Remove redundant ports
-	public static void simplify(Circuit circuit, Solutions solutions) {
+	public static void simplify(Circuit circuit) {
 
 		Map<Integer, List<Integer>> same = new TreeMap<Integer, List<Integer>>(Collections.reverseOrder());
 
-		for (Solution solution : solutions) {
+		for (Solution solution : Solutions.getInstance()) {
 			evaluateRepetition(circuit, same, solution);
 		}
 		
@@ -42,7 +43,7 @@ public class CircuitUtils {
 		
 		//int original = EvaluateHits.evaluate(circuit, solutions);
 
-		for (int i = solutions.getInputSize(); i < circuit.size(); i++) {
+		for (int i = Solutions.getInstance().getInputSize(); i < circuit.size(); i++) {
 			for (Map.Entry<Integer, List<Integer>> entry : same.entrySet()) {
 				if ((entry.getValue() != null) && (entry.getValue().size() > 0)) {
 					if (circuit.get(i).references(entry.getKey().intValue())) {
@@ -76,14 +77,14 @@ public class CircuitUtils {
 	}
 	
 	
-	public static void useLowerPortsWithSameOutput(Circuit circuit, Solutions solutions) {
+	public static void useLowerPortsWithSameOutput(Circuit circuit) {
 		Map<Integer, List<Integer>> same = new TreeMap<Integer, List<Integer>>(Collections.reverseOrder());
 
-		for (Solution solution : solutions) {
+		for (Solution solution : Solutions.getInstance()) {
 			evaluateRepetition(circuit, same, solution);
 		}
 
-		for (int i = solutions.getInputSize(); i < circuit.size(); i++) {
+		for (int i = Solutions.getInstance().getInputSize(); i < circuit.size(); i++) {
 			for (Map.Entry<Integer, List<Integer>> entry : same.entrySet()) {
 				if ((entry.getValue() != null) && (entry.getValue().size() > 0)) {
 					if (circuit.get(i).references(entry.getKey().intValue())) {
@@ -96,7 +97,9 @@ public class CircuitUtils {
 	
 	
 	// Remove ports not used by Output
-	public static void simplify(Circuit circuit, int output[]) {
+	public static void simplifyByRemovingUnsedPorts(Circuit circuit) {
+
+		int output[] =  EvaluateHits.generateOutput(circuit);
 
 		TreeSet<Integer> canRemove = new TreeSet<Integer>();
 
@@ -193,6 +196,17 @@ public class CircuitUtils {
 		}
 		
 		return answer;
+	}
+
+
+	public static void betterSimplify(Circuit circuit) {
+		useLowerPortsWithSameOutput(circuit);
+		simplifyByRemovingUnsedPorts(circuit);
+	}
+
+	public static void evaluateCircuit(Circuit circuit) {
+		circuit.setGrade(Circuit.GRADE_HIT, EvaluateHits.evaluate(circuit));
+		circuit.setGrade(Circuit.GRADE_CIRCUIT_SIZE, circuit.size());
 	}
 
 }

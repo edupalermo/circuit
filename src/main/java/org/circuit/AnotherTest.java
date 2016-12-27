@@ -9,39 +9,50 @@ import org.circuit.util.CircuitUtils;
 public class AnotherTest {
 	
 	public static void main(String args[]) {
+		System.out.println("Initiating ");
+
+
+		Circuit original = RandomGenerator.randomGenerate(8000);
 
 		Circuit cs[] = new Circuit[5];
-		
-		cs[0] = RandomGenerator.randomGenerate(ClientApplication.solutions.getInputSize(), 1000);
-		cs[1] = (Circuit) cs[0].clone();
-		cs[2] = (Circuit) cs[0].clone();
-		cs[3] = (Circuit) cs[0].clone();
-		cs[4] = CircuitScramble.scramble(cs[0], cs[0]);
-		
-		for (Circuit c : cs) {
-			ClientApplication.evaluateCircuit(c, ClientApplication.solutions);
-		}
-		
-		for (int i = 0; i < cs.length; i++) {
-			System.out.println(String.format("%d %s", i, cs[i].toSmallString()));
-		}
-		
-		System.out.println("===============================================================");
-		
-		CircuitUtils.simplify(cs[1], ClientApplication.solutions);
-		
-		CircuitUtils.simplify(cs[2], EvaluateHits.generateOutput(cs[2], ClientApplication.solutions));
-		
-		CircuitUtils.useLowerPortsWithSameOutput(cs[3], ClientApplication.solutions);
-		CircuitUtils.simplify(cs[3], EvaluateHits.generateOutput(cs[3], ClientApplication.solutions));
-		
+		long took[] = new long[5];
 
-		for (Circuit c : cs) {
-			ClientApplication.evaluateCircuit(c, ClientApplication.solutions);
-		}
-		
+
+		//First
+		long initial = System.currentTimeMillis();
+		cs[0] = (Circuit) original.clone();
+		CircuitUtils.evaluateCircuit(cs[0]);
+		took[0] = System.currentTimeMillis() - initial;
+
+		//Second
+		initial = System.currentTimeMillis();
+		cs[1] = (Circuit) original.clone();
+		CircuitUtils.simplify(cs[1]);
+		CircuitUtils.evaluateCircuit(cs[1]);
+		took[1] = System.currentTimeMillis() - initial;
+
+		//Third
+		initial = System.currentTimeMillis();
+		cs[2] = (Circuit) original.clone();
+		CircuitUtils.simplifyByRemovingUnsedPorts(cs[2]);
+		CircuitUtils.evaluateCircuit(cs[2]);
+		took[2] = System.currentTimeMillis() - initial;
+
+		//Fourth
+		initial = System.currentTimeMillis();
+		cs[3] = (Circuit) original.clone();
+		CircuitUtils.betterSimplify(cs[3]);
+		CircuitUtils.evaluateCircuit(cs[3]);
+		took[3] = System.currentTimeMillis() - initial;
+
+		//Last
+		initial = System.currentTimeMillis();
+		cs[4] =  CircuitScramble.scramble((Circuit) cs[0].clone(), (Circuit) cs[0].clone());
+		CircuitUtils.evaluateCircuit(cs[4]);
+		took[4] = System.currentTimeMillis() - initial;
+
 		for (int i = 0; i < cs.length; i++) {
-			System.out.println(String.format("%d %s", i, cs[i].toSmallString()));
+			System.out.println(String.format("%d [%dms] %s", i, took[i], cs[i].toSmallString()));
 		}
 		
 		

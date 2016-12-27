@@ -4,9 +4,13 @@ import java.util.ArrayList;
 
 public class Solutions extends ArrayList<Solution> {
 
+	private static final Object semaphore = new Object();
+
+	private static Solutions instance = null;
+
 	private static final long serialVersionUID = 1L;
 	
-	public Solutions() {
+	private Solutions() {
 		this.add(new StringSolution("a", "vogal"));
 		this.add(new StringSolution("b", "consoante"));
 		this.add(new StringSolution("c", "consoante"));
@@ -22,6 +26,17 @@ public class Solutions extends ArrayList<Solution> {
 		this.add(new StringSolution("0", "número"));
 		this.add(new StringSolution("1", "número"));
 
+	}
+
+	public static Solutions getInstance() {
+		if (instance == null) {
+			synchronized (semaphore) {
+				if (instance == null) {
+					instance = new Solutions();
+				}
+			}
+		}
+		return instance;
 	}
 
 	public int getInputSize() {
