@@ -44,7 +44,7 @@ public class Client {
 
 			for (;;) {
 				
-				long initial = System.currentTimeMillis();
+				//long initial = System.currentTimeMillis();
 
 				Circuit newCircuit = null;
 				
@@ -55,7 +55,7 @@ public class Client {
 					break;
 				case METHOD_RANDOM_ENRICH:
 					newCircuit = (Circuit) getCircuit();
-					RandomGenerator.randomEnrich(newCircuit, 1 + random.nextInt(newCircuit.size() / 10));
+					RandomGenerator.randomEnrich(newCircuit, 1 + (newCircuit.size() / 10));
 					break;
 				case METHOD_CIRCUITS_SCRABLE:
 					Circuit c1 = getCircuit();
@@ -90,7 +90,7 @@ public class Client {
 				newCircuit.clear();
 				newCircuit = null;
 				
-				logger.info(String.format("Method %s took %d ms", method.name(), (System.currentTimeMillis() - initial)));
+				//logger.info(String.format("Method %s took %d ms", method.name(), (System.currentTimeMillis() - initial)));
 
 			}
 		}

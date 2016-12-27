@@ -14,10 +14,13 @@ public class Solutions extends ArrayList<Solution> {
 		this.add(new StringSolution("e", "vogal"));
 		
 		this.add(new StringSolution("h", "consoante"));
+		this.add(new StringSolution("m", "consoante"));
 		
+		this.add(new StringSolution("A", "vogal"));
 		this.add(new StringSolution("H", "consoante"));
 		
 		this.add(new StringSolution("0", "número"));
+		this.add(new StringSolution("1", "número"));
 
 	}
 

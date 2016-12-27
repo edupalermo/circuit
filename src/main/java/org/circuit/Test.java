@@ -28,6 +28,12 @@ public class Test {
 			dump(c, circuit, output);
 		}
 		
+		dump('á', circuit, output);
+		dump('à', circuit, output);
+		dump('ã', circuit, output);
+		dump('â', circuit, output);
+		dump('0', circuit, output);
+		
 	}
 	
 	private static void dump(char c, Circuit circuit, int[] output) {

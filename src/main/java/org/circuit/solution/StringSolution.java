@@ -70,7 +70,7 @@ public class StringSolution extends Solution {
 	private static List<Boolean> byteToList(byte b) {
 		List<Boolean> list = new ArrayList<Boolean>();
 		for (int i = 0; i < 8; i++) {
-			list.add(getBit(b, i));
+			list.add(getBit(b & 0xFF, i));
 		}
 		return list;
 	}
@@ -78,21 +78,19 @@ public class StringSolution extends Solution {
 	private static byte listToByte(boolean state[], int output[], int offset, int size) {
 		int answer = 0;
 		
-		for (int i = offset; i < offset + size; i++) {
-			if (state[output[i]]) {
-				answer = answer + (int) Math.pow(2, (offset + size) - i - 1);
+		for (int i = 0; i < size; i++) {
+			if (state[output[i + offset]]) {
+				answer = answer + (int) Math.pow(2, size - 1 - i);
 			}
 		}
 		return (byte) answer;
 	}
 	
-	private static boolean getBit(byte b, int i) {
+	private static boolean getBit(int b, int i) {
 		return (0x01 & (b >> (7 - i))) == 1;
 	}
 	
 	public static String evaluate(Circuit circuit, int[] output, String input) {
-		StringBuffer sb = new StringBuffer();
-		
 		Clock clock = new Clock();
 		
 		boolean state[] = new boolean[circuit.size()];
@@ -161,7 +159,7 @@ public class StringSolution extends Solution {
 	
 	public static void main(String args[]) {
 		
-		List<Boolean> listInput = byteToList((byte) 55);
+		List<Boolean> listInput = byteToList((byte) -44);
 		
 		boolean state[] = new boolean[listInput.size()];
 		
@@ -170,9 +168,9 @@ public class StringSolution extends Solution {
 			state[i] = listInput.get(i).booleanValue();
 		}
 		
-		System.out.println(listToByte(state, new int[] {0, 1,2,3,4,5,6,7}, 0, 8));
-		
-		
+		System.out.println(listToByte(state, new int[] {0,1,2,3,4,5,6,7}, 0, 8));
 	}
+	
+	
 	
 }
