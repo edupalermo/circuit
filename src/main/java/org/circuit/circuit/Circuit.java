@@ -8,6 +8,8 @@ import java.util.TreeMap;
 import org.circuit.port.Port;
 import org.circuit.port.PortInput;
 import org.circuit.solution.TimeSlice;
+import org.circuit.util.IoUtils;
+import org.circuit.util.RandomUtils;
 
 public class Circuit extends ArrayList<Port> implements Cloneable {
 
@@ -21,7 +23,6 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 	public static final String GRADE_CIRCUIT_SIZE = "GRADE_CIRCUIT_SIZE";
 	
 	private Circuit() {
-		
 	}
 
 	public Circuit(int size) {
@@ -68,8 +69,17 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 			state[i] = this.get(i).evaluate(state);
 		}
 	}
+	
+	private transient String cacheForToString = null;
+	private transient int modCountForCache = -1;
 
 	public String toString() {
+		
+		if ((modCountForCache == this.modCount) && (this.grades.size() > 0) && (cacheForToString != null)) {
+			return cacheForToString;
+		}
+		
+		
 		StringBuffer sb = new StringBuffer();
 
 		sb.append(this.toSmallString());
@@ -80,6 +90,13 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 		}
 
 		sb.deleteCharAt(sb.length() - 1);
+		
+		
+		if (this.grades.size() > 0) {
+			this.cacheForToString = sb.toString();
+			modCountForCache = this.modCount;
+		}
+
 
 		return sb.toString();
 	}
@@ -137,5 +154,15 @@ public class Circuit extends ArrayList<Port> implements Cloneable {
 		
 		return circuit;
 	}
+	
+	private transient String cachedBase64Representation = null;
+	
+	public String getCachedBase64() {
+		if (cachedBase64Representation == null) {
+			cachedBase64Representation = IoUtils.objectToBase64(this);
+		}
+		return cachedBase64Representation;
+	}
+	
 	
 }

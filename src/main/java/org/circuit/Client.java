@@ -12,6 +12,7 @@ import org.circuit.random.RandomWeight;
 import org.circuit.solution.Solutions;
 import org.circuit.util.CircuitUtils;
 import org.circuit.util.IoUtils;
+import org.jivesoftware.smack.sasl.core.SCRAMSHA1Mechanism;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.boot.Banner.Mode;
@@ -34,6 +35,7 @@ public class Client {
 
 		RandomWeight<Method> methodChosser = new RandomWeight<Method>();
 		methodChosser.add(10000, Method.METHOD_RANDOM_ENRICH);
+		methodChosser.add(50, Method.METHOD_SCRAMBLE_WITH_NEW_RANDOM);
 		methodChosser.add(10, Method.METHOD_CIRCUITS_SCRABLE);
 		methodChosser.add(1, Method.METHOD_RANDOM_CIRCUIT);
 
@@ -51,13 +53,13 @@ public class Client {
 				Method method = methodChosser.next();
 				switch (method) {
 				case METHOD_RANDOM_CIRCUIT:
-					newCircuit = RandomGenerator.randomGenerate(random.nextInt(1, 250));
+					newCircuit = RandomGenerator.randomGenerate(random.nextInt(300, 1000));
 					break;
 				case METHOD_RANDOM_ENRICH:
 					newCircuit = (Circuit) getCircuit();
 					RandomGenerator.randomEnrich(newCircuit, 1 + (newCircuit.size() / 10));
 					break;
-				case METHOD_CIRCUITS_SCRABLE:
+				case METHOD_CIRCUITS_SCRABLE: {
 					Circuit c1 = getCircuit();
 					Circuit c2 = getCircuit();
 					
@@ -69,7 +71,21 @@ public class Client {
 					}
 
 					newCircuit = CircuitScramble.scramble(c1, c2);
+					}
+
+					break;
+				case METHOD_SCRAMBLE_WITH_NEW_RANDOM: {
+						Circuit c1 = getCircuit();
+						Circuit c2 = RandomGenerator.randomGenerate(random.nextInt(300, 1500));
 						
+						logger.info(String.format("Method SCRAMBLE WITH RANDOM %d %d", c1.size(), c2.size()));
+						if (c1.size() + c2.size() > 1500) {
+							CircuitUtils.simplifyByRemovingUnsedPorts(c1);
+							CircuitUtils.simplifyByRemovingUnsedPorts(c2);
+						}
+	
+						newCircuit = CircuitScramble.scramble(c1, c2);
+					}
 
 					break;
 				default:

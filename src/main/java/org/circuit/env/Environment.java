@@ -74,7 +74,7 @@ public class Environment {
 	}
 	
 	public String randomPick() {
-		return IoUtils.objectToBase64(this.population.get(RandomUtils.raffle(this.population.size())));
+		return this.population.get(RandomUtils.raffle(this.population.size())).getCachedBase64();
 	}
 	
 	public void insert(String base64Circuit) {
@@ -144,6 +144,20 @@ public class Environment {
 			}
 		}
 		return size;
+	}
+
+	public void adjust() {
+		if (getWeight() > 30000000) {
+			logger.warn("Adjust enabled!");
+			for (int i = 0; i < 1 + ((getWeight() - 30000000) / 5000000);i++) {
+				Circuit newCircuit = (Circuit) this.population.get(0).clone();
+				RandomGenerator.randomEnrich(newCircuit, 1);
+				CircuitUtils.evaluateCircuit(newCircuit);
+				this.orderedAdd(newCircuit);
+			}
+			
+		}
+		
 	}
 
 

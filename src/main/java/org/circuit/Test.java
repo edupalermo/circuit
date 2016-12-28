@@ -11,8 +11,8 @@ public class Test {
 	
 	public static void main(String args[]) {
 
-		//Circuit circuit = IoUtils.readObject(new File("C:\\temp\\circuit\\better.obj"), Circuit.class);
-		Circuit circuit = IoUtils.readObject(new File("/tmp/better.obj"), Circuit.class);
+		Circuit circuit = IoUtils.readObject(new File("C:\\temp\\circuit\\better.obj"), Circuit.class);
+		//Circuit circuit = IoUtils.readObject(new File("/tmp/better.obj"), Circuit.class);
 
 		int[] output = EvaluateHits.generateOutput(circuit);
 		
@@ -33,7 +33,13 @@ public class Test {
 		dump('à', circuit, output);
 		dump('ã', circuit, output);
 		dump('â', circuit, output);
-		dump('0', circuit, output);
+		
+		dump('é', circuit, output);
+		dump('ê', circuit, output);
+		
+		dump('ó', circuit, output);
+		dump('õ', circuit, output);
+		dump('ô', circuit, output);
 		
 	}
 	

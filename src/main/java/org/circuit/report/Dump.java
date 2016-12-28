@@ -17,6 +17,7 @@ public class Dump {
     public void report() {
 		environment.dump();
 		environment.limitPopulation();
+		environment.adjust();
     }
 
 }
