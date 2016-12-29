@@ -18,6 +18,7 @@ public class Dump {
 		environment.dump();
 		environment.limitPopulation();
 		environment.adjust();
+		environment.renewDna();
     }
 
 }

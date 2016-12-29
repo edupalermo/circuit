@@ -2,7 +2,7 @@ package org.circuit.util;
 
 public class StringUtils {
 
-	public static int levenshteinDistance (CharSequence lhs, CharSequence rhs) {                          
+	public static int getLevenshteinDistance (CharSequence lhs, CharSequence rhs) {                          
 	    int len0 = lhs.length() + 1;                                                     
 	    int len1 = rhs.length() + 1;                                                     
 	                                                                                    
@@ -43,12 +43,11 @@ public class StringUtils {
 	}
 	
 	public static void main(String[] args) {
-		System.out.println(levenshteinDistance("Eduardo", "Eduard"));
-		System.out.println(levenshteinDistance("eduardo", "Eduard"));
-		System.out.println(levenshteinDistance("eduardo", "Eduardo"));
-		System.out.println(levenshteinDistance("Eduardo Gomes Palermo", "Eduardo Palermo"));
-		System.out.println(levenshteinDistance("Eduardo Gomes Palermo", "Eduardo Palermo Gomes"));
-		System.out.println(levenshteinDistance("Eduardo Gomes Palermo", "Eduardo Palermo Gomes"));
+		
+		
+		System.out.println(getLevenshteinDistance("Eduardo Gomes Palermo", "Eduardo Palermo"));
+		System.out.println(getLevenshteinDistance("Eduardo Palermo", "Eduardo Gomes Palermo"));
+
 	}
 	
 }
