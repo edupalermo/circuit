@@ -10,5 +10,5 @@ java -Xmx2G -cp target/classes/. org.circuit.AnotherTest
 java -Xmx1G -cp target/classes/. org.circuit.Application
 
 
-java -Xmx4G -cp target/circuito-0.0.1-SNAPSHOT.jar -Dloader.main=org.circuit.Application org.springframework.boot.loader.PropertiesLauncher
+java -Xmx3G -cp target/circuito-0.0.1-SNAPSHOT.jar -Dloader.main=org.circuit.Application org.springframework.boot.loader.PropertiesLauncher
 java -cp target/circuito-0.0.1-SNAPSHOT.jar -Dloader.main=org.circuit.Client org.springframework.boot.loader.PropertiesLauncher
